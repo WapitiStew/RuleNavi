@@ -1,0 +1,94 @@
+key,value,type,remark
+DB_SRC_EXCEL,docs/rules_db.xlsx,,
+DB_NAME,rules/rules.db,,
+TBL_CAT_TYPE,tbl_cat_type,,
+ITM_CAT_TYPE_PKEY,key_cat_type,INTEGER, -- キー大分類キー
+ITM_CAT_TYPE_TITLE_JP,title_jp,TEXT, -- 日本語名称
+ITM_CAT_TYPE_TITLE_EN,title_en,TEXT, -- 英語コード
+ITM_CAT_TYPE_PATH,path,TEXT, -- 保存先フォルダのパス
+TBL_CAT_MAJOR,tbl_cat_major,,
+ITM_CAT_MAJOR_PKEY,key_cat_major,INTEGER, -- 中分類キー
+ITM_CAT_MAJOR_TITLE_JP,title_jp,TEXT, -- 日本語名称
+ITM_CAT_MAJOR_TITLE_EN,title_en,TEXT, -- 英語名称
+ITM_CAT_MAJOR_FKEY_CAT_TYPE,key_cat_type,INTEGER, -- 対応する大分類key_cat_type
+ITM_CAT_MAJOR_PATH,path,TEXT, -- 保存先フォルダのパス
+TBL_CAT_SUB,tbl_cat_sub,,
+ITM_CAT_SUB_PKEY,key_cat_sub,INTEGER, -- 小分類キー
+ITM_CAT_SUB_TITLE_JP,title_jp,TEXT, -- 日本語名称
+ITM_CAT_SUB_TITLE_EN,title_en,TEXT, -- 英語名称
+ITM_CAT_SUB_FKEY_CAT_MAJOR,key_cat_major,INTEGER, -- 対応する中分類key_cat_major
+ITM_CAT_SUB_PATH,path,TEXT, -- 保存先フォルダのパス
+TBL_CAT_STATE,tbl_cat_state,,
+ITM_CAT_STATE_PKEY,key_cat_state,INTEGER, -- 状態ID（0:作成中 1:制定版 2:廃止）
+ITM_CAT_STATE_TITLE_JP,title_jp,TEXT, -- 日本語名称
+ITM_CAT_STATE_TITLE_EN,title_en,TEXT, -- 英語名称
+TBL_RULES,tbl_rules,,
+ITM_RULES_PKEY,key_rule,INTEGER, -- ルール通し番号
+ITM_RULES_ID_RULE,id_rule,TEXT, -- 文書ID
+ITM_RULES_NAME_RULE,name_rule,TEXT, -- 文書名
+ITM_RULES_FKEY_CAT_SUB,key_cat_sub,INTEGER, -- 小分類キー
+ITM_RULES_LINK,link,TEXT, -- 元文書へのURL
+ITM_RULES_FKEY_CAT_STATE,key_cat_state,INTEGER, -- 状態ID
+ITM_RULES_CREATED_DATE,created_date,TEXT, -- 制定日など
+ITM_RULES_UPDATE_DATE,update_date,TEXT, -- 改訂日など
+TBL_CAT_REQUEST,tbl_cat_request,,
+ITM_CAT_REQUEST_PKEY,key_cat_request,INTEGER, -- 設計領域ID
+ITM_CAT_REQUEST_TITLE_JP,title_jp,TEXT, -- 日本語名称
+ITM_CAT_REQUEST_TITLE_EN,title_en,TEXT, -- 英語名称
+ITM_CAT_REQUEST_KEY_CAT_REQ_TYPE,key_cat_req_type,TEXT, -- 要件種類ID
+ITM_CAT_REQUEST_REQ_TYPE,req_type,TEXT, -- 要件種類
+TBL_CAT_PHASE,tbl_cat_phase,,
+ITM_CAT_PHASE_PKEY,key_cat_phase,INTEGER, -- 設計領域ID
+ITM_CAT_PHASE_TITLE_JP,title_jp,TEXT, -- 日本語名称
+ITM_CAT_PHASE_TITLE_EN,title_en,TEXT, -- 英語名称
+TBL_SCP_SALES_REGION,tbl_scp_sales_region,,
+ITM_SCP_SALES_REGION_PKEY,key_scp_sales_region,INTEGER, -- 販売地域ID
+ITM_SCP_SALES_REGION_TITLE_JP,title_jp,TEXT, -- 日本語名称
+ITM_SCP_SALES_REGION_TITLE_EN,title_en,TEXT, -- 英語名称
+ITM_SCP_SALES_REGION_COUNTRY_CODE_2,country_code_2,TEXT, -- 国コード２桁 ISO 3166-1 alpha-2
+ITM_SCP_SALES_REGION_COUNTRY_CODE_3,country_code_3,TEXT, -- 国コード３桁 ISO 3166-1 alpha-3
+TBL_SCP_PRODUCT_GENRE,tbl_scp_product_genre,,
+ITM_SCP_PRODUCT_GENRE_PKEY,key_scp_product_genre,INTEGER, -- 製品ジャンルID
+ITM_SCP_PRODUCT_GENRE_TITLE_JP,title_jp,TEXT, -- 日本語名称
+ITM_SCP_PRODUCT_GENRE_TITLE_EN,title_en,TEXT, -- 英語名称
+ITM_SCP_PRODUCT_GENRE_HS_CODE,hs_code,TEXT, -- HSコード
+TBL_SCP_SERVICE_GENRE,tbl_scp_service_genre,,
+ITM_SCP_SERVICE_GENRE_PKEY,key_scp_service_genre,INTEGER, -- 製品ジャンルID
+ITM_SCP_SERVICE_GENRE_TITLE_JP,title_jp,TEXT, -- 日本語名称
+ITM_SCP_SERVICE_GENRE_TITLE_EN,title_en,TEXT, -- 英語名称
+TBL_SCP_EQUIPMENT,tbl_scp_equipment,,
+ITM_SCP_EQUIPMENT_PKEY,key_scp_equipment,INTEGER, -- 装備ID
+ITM_SCP_EQUIPMENT_TITLE_JP,title_jp,TEXT, -- 日本語名称
+ITM_SCP_EQUIPMENT_TITLE_EN,title_en,TEXT, -- 英語名称
+TBL_SCP_PII,tbl_scp_pii,,
+ITM_SCP_PII_PKEY,key_scp_pii,INTEGER, -- 装備ID
+ITM_SCP_PII_TITLE_JP,title_jp,TEXT, -- 日本語名称
+ITM_SCP_PII_TITLE_EN,title_en,TEXT, -- 英語名称
+TBL_SCP_DESIGN_DOMAIN,tbl_scp_design_domain,,
+ITM_SCP_DESIGN_DOMAIN_PKEY,key_scp_design_domain,INTEGER, -- 設計領域ID
+ITM_SCP_DESIGN_DOMAIN_TITLE_JP,title_jp,TEXT, -- 日本語名称
+ITM_SCP_DESIGN_DOMAIN_TITLE_EN,title_en,TEXT, -- 英語名称
+TBL_REQUEST,tbl_request,,
+ITM_REQUEST_PKEY,key_req,INTEGER, -- 要件キー
+ITM_REQUEST_KEY_RULE,key_rule,TEXT, -- 基準キー
+ITM_REQUEST_ID_CAP,id_cap,TEXT, -- 章名称
+ITM_REQUEST_FTITLE_CAPTER,title_capter,INTEGER, -- 節名称
+ITM_REQUEST_TITLE_SECTION,title_section,TEXT, -- 本文(上)
+ITM_REQUEST_FTOP_BODY,top_body,INTEGER, -- 本文(下)
+ITM_REQUEST_LOW_BODY,low_body,TEXT, -- 表(上)
+ITM_REQUEST_TOP_TBL,top_tbl,TEXT, -- 図(上)
+ITM_REQUEST_TOP_FIG,top_fig,TEXT, -- 表(下)
+ITM_REQUEST_LOW_TBL,low_tbl,TEXT, -- 図(下)
+ITM_REQUEST_LOW_FIG,low_fig,TEXT, -- 参照
+ITM_REQUEST_LEAD_TIME,lead_time,TEXT, -- リードタイム
+ITM_REQUEST_REFERENCE,reference,TEXT, -- 参照
+ITM_REQUEST_CREATED_DATE,created_date,TEXT, -- 制定日など
+ITM_REQUEST_FUPDATE_DATE,update_date,INTEGER, -- 改訂日など
+ITM_REQUEST_FKEY_CAT_REQUEST,key_cat_request,INTEGER, -- 要求カテゴリID
+ITM_REQUEST_FKEY_CAT_PHASE,key_cat_phase,INTEGER, -- 対応フェーズID
+ITM_REQUEST_FSCOPE_PRODUCT_GENRE,scope_product_genre,TEXT, -- 製品ジャンル(複数指定可 中間テーブル初回生成用)
+ITM_REQUEST_FSCOPE_SERVICE_GENRE,scope_service_genre,TEXT, -- サービスジャンル(複数指定可 中間テーブル初回生成用)
+ITM_REQUEST_FSCOPE_EQUIPMENT,scope_equipment,TEXT, -- 装備(複数指定可 中間テーブル初回生成用)
+ITM_REQUEST_FSCOPE_PII,scope_pii,TEXT, -- 個人情報(複数指定可 中間テーブル初回生成用)
+ITM_REQUEST_FSCOPE_DESIGN_DOMAIN,scope_design_domain,TEXT, -- 設計領域(複数指定可 中間テーブル初回生成用)
+ITM_REQUEST_UNIQUE_SEARCH,unique_search,TEXT, -- 固有条件(複数指定可 中間テーブル初回生成用)
