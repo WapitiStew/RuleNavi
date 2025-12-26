@@ -1,0 +1,26 @@
+# 一時ファイル
+*.log
+__*
+*.pptx
+
+# ビルドディレクトリ
+/lib/
+**/__*/
+**/build/
+**/.vs/
+**/.git/
+**/.vscode/
+/build/
+
+# python caches
+**/__pycache__/
+*.pyc
+
+# venv
+.venv/
+venv/
+
+# editor
+.vscode/
+.idea/
+.DS_Store

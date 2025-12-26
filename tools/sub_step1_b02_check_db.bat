@@ -1,0 +1,2 @@
+sub_run_script.bat step1_p02_check_db.py
+pause

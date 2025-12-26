@@ -1,0 +1,2 @@
+sub_run_script.bat step2_p04_export_markdown_rules.py
+pause

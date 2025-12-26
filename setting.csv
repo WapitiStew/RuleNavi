@@ -1,6 +1,22 @@
 key,value,type,remark
-DB_SRC_EXCEL,docs/rules_db.xlsx,,
-DB_NAME,rules/rules.db,,
+RESRC_DIR,resource,TEXT, -- 入力ディレクトリ
+BUILD_DIR,build,TEXT, -- 出力ディレクトリ
+DB_SRC_EXCEL,rules_db.xlsx,TEXT, -- 
+DB_NAME,rules.db,TEXT, -- 作成される SQLite ファイル
+RULES_DIR,rules,TEXT, -- ルール保存ディレクトリ
+RULES_FILE_DIR,file,TEXT, -- ルールファイルの保存先ディレクトリ
+JSON_DIR,json,TEXT, -- JSON出力ディレクトリ
+JSON_MAIN_TREE,main_tree.json,TEXT, -- ルールツリーJSONファイル名
+JSON_MAIN_INDEX,main_index.json,TEXT, -- ルールインデックスJSONファイル名
+MD_RULE_FILENAME,body.md,TEXT, -- ルールMDファイル名
+MD_BODY_FILENAME,body.md,TEXT,-- markdown filename used by Step2-5 + site viewer
+TSV_MANIFEST_RULE_CAP,manifest_rule_cap.tsv,TEXT, -- ルールマニフェストTSVファイル名
+HTML_DIR,html,TEXT, -- HTML出力ディレクトリ
+HTML_MAIN,index.html,TEXT, -- ルールツリーHTMLファイル名
+SITE_DIR,site,TEXT,-- site output dir under BUILD_DIR (default: site)
+SITE_TITLE,RuleNavi,TEXT,-- title shown in header
+SITE_INDEX_HTML,index.html,TEXT,-- entry html name
+SITE_APP_JS,app.js,TEXT,-- app js name
 TBL_CAT_TYPE,tbl_cat_type,,
 ITM_CAT_TYPE_PKEY,key_cat_type,INTEGER, -- キー大分類キー
 ITM_CAT_TYPE_TITLE_JP,title_jp,TEXT, -- 日本語名称

@@ -1,0 +1,2 @@
+sub_run_script.bat step1_p00_check_excel.py
+pause
