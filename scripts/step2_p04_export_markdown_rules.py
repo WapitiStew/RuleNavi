@@ -1,10 +1,30 @@
-# -*- coding: utf-8 -*-
-import argparse, csv, re, sqlite3
-from pathlib import Path
+﻿# -*- coding: utf-8 -*-
+##
+# @file scripts/step2_p04_export_markdown_rules.py
+# @brief Generate Markdown stubs (body.md) for rules and chapters.
+#
+# @if japanese
+# manifest_rule_cap.tsv と SQLite のルール/リクエスト情報を使い、各ルールと章のMarkdown(body.md)を生成または存在確認します。
+# 上書き・チェックのみをCLI引数で切り替えられ、生成結果をツリー表示とサマリーで出力します。
+# DBや既存ファイルのロジックは変更せず、Markdownの内容を組み立てるのみです。
+# @endif
+#
+# @if english
+# Uses manifest_rule_cap.tsv and SQLite rule/request data to generate or verify Markdown (body.md) for each rule and chapter.
+# CLI flags allow overwrite or check-only modes, and results are printed as a tree with summary counts.
+# Does not alter DB logic; it only assembles Markdown content.
+# @endif
+#
 
-import setting_key as sk
-import read_setting as rs
-import setting_helper as sh
+import argparse  # [JP] 標準: CLI引数処理 / [EN] Standard: CLI argument parsing
+import csv  # [JP] 標準: TSV/CSV処理 / [EN] Standard: TSV/CSV handling
+import re  # [JP] 標準: 正規表現サニタイズ / [EN] Standard: regex sanitization
+import sqlite3  # [JP] 標準: SQLite接続 / [EN] Standard: SQLite connectivity
+from pathlib import Path  # [JP] 標準: パス操作 / [EN] Standard: path utilities
+
+import setting_key as sk  # [JP] 自作: 設定キー定数 / [EN] Local: setting keys
+import read_setting as rs  # [JP] 自作: 設定読込 / [EN] Local: load settings
+import setting_helper as sh  # [JP] 自作: パス解決ヘルパ / [EN] Local: path helpers
 
 DEFAULT_MANIFEST = "manifest_rule_cap.tsv"
 DEFAULT_MD = "body.md"
@@ -12,6 +32,19 @@ KEY_TSV_MANIFEST_RULE_CAP = "TSV_MANIFEST_RULE_CAP"  # optional in setting.csv
 KEY_MD_BODY_FILENAME = "MD_BODY_FILENAME"  # optional in setting.csv
 
 
+##
+# @brief Sanitize segment for filenames / ファイル名用セグメントをサニタイズする
+#
+# @if japanese
+# 禁止文字を"_"へ置換し、連続空白を1つにまとめます。空になった場合は"_"を返します。
+# @endif
+#
+# @if english
+# Replaces forbidden characters with "_", collapses whitespace, and returns "_" when empty.
+# @endif
+#
+# @param s [in]  元の文字列 / Original string
+# @return str  サニタイズ結果 / Sanitized string
 def safe_seg(s: str) -> str:
     s = (s or "").strip()
     s = re.sub(r'[\\/:*?"<>|]+', "_", s)
@@ -19,6 +52,21 @@ def safe_seg(s: str) -> str:
     return s or "_"
 
 
+##
+# @brief Get setting value with default / 設定値をデフォルト付きで取得
+#
+# @if japanese
+# setting.csv からキーを取得し、存在しない場合はデフォルト値を返します。Noneの場合はデフォルトを返します。
+# @endif
+#
+# @if english
+# Retrieves a value from setting.csv and falls back to the default when missing or None.
+# @endif
+#
+# @param setting_csv [in]  設定DataFrame / Settings DataFrame
+# @param key [in]  キー名 / Key name
+# @param default [in]  フォールバック値 / Default value
+# @return str  設定値またはデフォルト / Retrieved value or default
 def gs(setting_csv, key, default):
     try:
         v = rs.get_setting_value(setting_csv, key)
@@ -27,12 +75,38 @@ def gs(setting_csv, key, default):
         return default
 
 
+##
+# @brief Normalize line endings and trim / 改行を正規化しトリムする
+#
+# @if japanese
+# Noneを空文字に変換し、CRLF/CRをLFに揃えて前後の空白を除去します。
+# @endif
+#
+# @if english
+# Converts None to empty string, normalizes CRLF/CR to LF, and strips surrounding whitespace.
+# @endif
+#
+# @param v [in]  対象文字列 / Target string
+# @return str  正規化後文字列 / Normalized string
 def norm(v):
     if v is None:
         return ""
     return str(v).replace("\r\n", "\n").replace("\r", "\n").strip()
 
 
+##
+# @brief Build tree lines for result display / 結果表示用ツリー行を生成する
+#
+# @if japanese
+# ノードリストを再帰的に走査し、接続線付きの行文字列を返します。
+# @endif
+#
+# @if english
+# Recursively walks node lists and returns lines with branch markers for display.
+# @endif
+#
+# @param nodes [in]  ルートノードリスト / Root node list
+# @return list  ツリー文字列リスト / List of tree lines
 def tree_lines(nodes):
     out = []
 
@@ -49,6 +123,19 @@ def tree_lines(nodes):
     return out
 
 
+##
+# @brief Resolve DB path from settings / 設定からDBパスを解決する
+#
+# @if japanese
+# KEY_DB_NAME を取得し、スラッシュを含む場合はそのままPath化、含まない場合はrules_file_fullpathで解決します。
+# @endif
+#
+# @if english
+# Fetches KEY_DB_NAME; if it contains slashes returns it directly, otherwise resolves via rules_file_fullpath.
+# @endif
+#
+# @param setting_csv [in]  設定DataFrame / Settings DataFrame
+# @return Path  DBパス / Resolved DB path
 def resolve_db(setting_csv) -> Path:
     raw = str(rs.get_setting_value(setting_csv, sk.KEY_DB_NAME)).strip()
     if ("/" in raw) or ("\\" in raw):
@@ -56,6 +143,19 @@ def resolve_db(setting_csv) -> Path:
     return Path(sh.rules_file_fullpath(setting_csv, raw))
 
 
+##
+# @brief Load manifest_rule_cap.tsv and collect rule info / manifest_rule_cap.tsv を読み込んでルール情報を集約
+#
+# @if japanese
+# manifest_rule_cap.tsvを読み込み、ルール毎にフォルダ情報と章情報をまとめたリストを返します。capsはid_capをキーにソートします。
+# @endif
+#
+# @if english
+# Loads manifest_rule_cap.tsv and returns a list of rule dictionaries with folder info and sorted chapter entries.
+# @endif
+#
+# @param setting_csv [in]  設定DataFrame / Settings DataFrame
+# @return tuple  (ルールリスト, 出力ルートPath) / (rule list, output root Path)
 def load_manifest(setting_csv):
     out_root = Path(sh.rules_file_dir_path(setting_csv))
     manifest = gs(setting_csv, KEY_TSV_MANIFEST_RULE_CAP, DEFAULT_MANIFEST)
@@ -66,11 +166,13 @@ def load_manifest(setting_csv):
     req = {"type_path", "major_path", "sub_path", "id_rule", "key_rule", "id_cap", "out_dir"}
     rules = {}
 
+    # [JP] TSV読込と必須ヘッダ検証 / [EN] Read TSV and validate required headers
     with path.open("r", encoding="utf-8", newline="") as f:
         r = csv.DictReader(f, delimiter="\t")
         if r.fieldnames is None or not req.issubset(set(r.fieldnames)):
             raise ValueError(f"manifest header mismatch: {r.fieldnames}")
 
+        # [JP] 行を走査してrule/cap情報を整理 / [EN] Iterate rows to aggregate rule/cap info
         for row in r:
             id_rule = (row.get("id_rule") or "").strip()
             if not id_rule:
@@ -104,6 +206,24 @@ def load_manifest(setting_csv):
     return lst, out_root
 
 
+##
+# @brief Write file or only check existence / ファイル書き込みまたは存在チェックを行う
+#
+# @if japanese
+# check_onlyがTrueなら存在有無を返し、Falseなら必要に応じてディレクトリ作成と上書き/スキップを行います。
+# 例外発生時はNGとエラー種別を返します。
+# @endif
+#
+# @if english
+# If check_only is True, returns existence status; otherwise writes content, creating parents and respecting overwrite flag.
+# Returns NG with error type when exceptions occur.
+# @endif
+#
+# @param path [in]  出力パス / Target path
+# @param content [in]  書き込む内容 / Content to write
+# @param overwrite [in]  上書き可否 / Whether to overwrite existing
+# @param check_only [in]  存在確認のみか / Check-only mode flag
+# @return tuple  (ステータス, アクション) / (status, action)
 def write_or_check(path: Path, content: str, overwrite: bool, check_only: bool):
     try:
         existed = path.exists()
@@ -118,10 +238,38 @@ def write_or_check(path: Path, content: str, overwrite: bool, check_only: bool):
         return ("NG", f"failed({type(e).__name__})")
 
 
+##
+# @brief Main entry to export rule Markdown / ルールMarkdownを出力するメイン処理
+#
+# @if japanese
+# CLI引数を処理し、DBとmanifestを読み込んで各ルールと章のbody.mdを生成または存在確認します。
+# SQLでメタデータと本文を取得し、章一覧や本文をMarkdownに整形して書き出します。結果をツリー表示しサマリーを出力します。
+# @endif
+#
+# @if english
+# Parses CLI flags, loads DB and manifest, then generates or checks body.md for each rule and chapter.
+# Retrieves metadata and contents via SQL, formats Markdown with chapter lists and sections, writes files, prints a tree, and summarizes results.
+# @endif
+#
+# @details
+# @if japanese
+# - 設定と引数から上書き/チェックモードを決定する。
+# - DBとmanifestを読み込み、ルールと章の対象リストを構築する。
+# - メタ情報/本文/参考情報をSQLで取得しMarkdownを作成、write_or_checkで保存または確認する。
+# - 処理結果をツリー形式で表示し、OK/NG件数をサマリー出力する。
+# @endif
+# @if english
+# - Determine overwrite/check-only mode from settings and CLI.
+# - Load DB and manifest to build target rule/chapter list.
+# - Query metadata/body/reference via SQL, assemble Markdown, and save or check via write_or_check.
+# - Display results as a tree and print OK/NG summary.
+# @endif
+#
+# @return int  終了コード / Exit code
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--overwrite", action="store_true", help="既存body.mdも上書き")
-    ap.add_argument("--check-only", action="store_true", help="書き込みせず存在チェックのみ")
+    ap.add_argument("--overwrite", action="store_true", help="body.mdを強制上書き")
+    ap.add_argument("--check-only", action="store_true", help="生成せず存在のみにチェックする")
     a = ap.parse_args()
 
     setting_csv = rs.load_setting_csv()
@@ -138,7 +286,7 @@ def main():
 
     md_name = gs(setting_csv, KEY_MD_BODY_FILENAME, DEFAULT_MD).strip() or DEFAULT_MD
 
-    # tables / columns (setting.csv 依存)
+    # [JP] テーブル/カラム設定を取得 / [EN] Fetch table/column settings
     tbl_rules = str(rs.get_setting_value(setting_csv, sk.KEY_TBL_RULES))
     tbl_request = str(rs.get_setting_value(setting_csv, sk.KEY_TBL_REQUEST))
 
@@ -167,11 +315,13 @@ def main():
         sql_cap_title = f"SELECT {c_req_cap_tit} AS title_capter FROM {tbl_request} WHERE {c_req_key_rule}=? AND {c_req_id_cap}=? AND {c_req_cap_tit} IS NOT NULL LIMIT 1"
         sql_cap_rows = f"SELECT {c_req_pkey} AS key_req,{c_req_cap_tit} AS title_capter,{c_req_sec_tit} AS title_section,{c_req_top} AS top_body,{c_req_low} AS low_body,{c_req_ref} AS reference FROM {tbl_request} WHERE {c_req_key_rule}=? AND {c_req_id_cap}=? ORDER BY {c_req_pkey}"
 
+        # [JP] 各ルールを処理 / [EN] Process each rule
         for r in rules:
             key_rule = r["key_rule"]
             meta_row = con.execute(sql_rule, (key_rule,)).fetchone()
             meta = dict(meta_row) if meta_row else {}
 
+            # [JP] 章タイトルの取得 / [EN] Fetch chapter titles
             cap_titles = {}
             for c in r["caps"]:
                 row = con.execute(sql_cap_title, (key_rule, c["id_cap"])).fetchone()
@@ -206,6 +356,7 @@ def main():
             ok += st == "OK"
             ng += st != "OK"
 
+            # [JP] 章ごとのMarkdown生成 / [EN] Generate Markdown for each chapter
             for c in r["caps"]:
                 id_cap = c["id_cap"]
                 cap_md_path = Path(c["cap_dir"]) / md_name
@@ -253,6 +404,7 @@ def main():
     print(f"MD_NAME : {md_name}\n")
     print(out_root.as_posix())
 
+    # [JP] 結果ツリーを表示 / [EN] Print result tree
     nodes = []
     for r in rules:
         kids = [

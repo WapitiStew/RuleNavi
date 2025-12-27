@@ -1,25 +1,72 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
+##
+# @file src/sitegen/md_html.py
+# @brief Lightweight Markdown to HTML converter for sitegen.
+#
+# @if japanese
+# MarkdownテキストをシンプルなHTMLへ変換し、body.html用のラッパーも提供します。
+# コードブロックやリスト、ヘッダを最低限サポートし、スクリプト側でIFrame高さ通知用のJSを付与します。
+# 外部ライブラリを使わず、文字列操作のみで完結します。
+# @endif
+#
+# @if english
+# Converts Markdown text to minimal HTML and provides a wrapper for body.html output.
+# Supports basic code blocks, lists, and headings, adding a JS helper for iframe height reporting.
+# Uses only string processing without external libraries.
+# @endif
+#
+
 from __future__ import annotations
 
-import re
-from typing import List
+import re  # [JP] 標準: 正規表現による行判定 / [EN] Standard: regex for line parsing
+from typing import List  # [JP] 標準: 型ヒント用List / [EN] Standard: List type hint
 
 
+##
+# @brief Convert Markdown text to simple HTML / Markdownテキストを簡易HTMLへ変換する
+#
+# @if japanese
+# Markdownのヘッダ(#/##/###)、箇条書き(-,*)、コードブロック```、空行を扱い、その他は<p>でラップします。
+# エスケープは & < > のみを対象にし、コードブロック内はそのまま出力します。
+# @endif
+#
+# @if english
+# Handles headings (#/##/###), bullet lists (-,*), fenced code blocks ```, and blank lines, wrapping remaining lines in <p>.
+# Escapes &, <, > outside code blocks while emitting raw content inside code fences.
+# @endif
+#
+# @param md_text [in]  入力Markdownテキスト / Input Markdown text
+# @return str  生成したHTML文字列 / Generated HTML string
+# @details
+# @if japanese
+# - 改行コードをLFに正規化し行単位で処理する。
+# - リスト開始/終了をclose_listで制御しネストは未対応。
+# - コードブロック開始終了をin_codeで管理し、未終了の場合は閉じタグを追加する。
+# @endif
+# @if english
+# - Normalizes newlines to LF and processes line by line.
+# - Manages list opening/closing via close_list (no nesting support).
+# - Tracks code block state with in_code and appends closing tags if left open.
+# @endif
+#
 def md_to_html(md_text: str) -> str:
     lines = md_text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
     out: List[str] = []
     in_code = False
     list_open = False
 
+    # [JP] HTMLエスケープ補助 / [EN] Helper to escape HTML entities
     def esc(s: str) -> str:
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
+    # [JP] 箇条書きのクローズ制御 / [EN] Close list if open
     def close_list() -> None:
         nonlocal list_open
         if list_open:
             out.append("</ul>")
             list_open = False
 
+    # [JP] 各行を判定してHTML化 / [EN] Convert each line based on pattern
     for line in lines:
         if re.match(r"^```(\w+)?\s*$", line):
             if not in_code:
@@ -70,6 +117,18 @@ def md_to_html(md_text: str) -> str:
     return "\n".join(out)
 
 
+##
+# @brief JavaScript snippet to report iframe height / iframe高さ通知用のJSスニペット
+#
+# @if japanese
+# body.html内から親フレームへ高さをpostMessageする即時関数の文字列を返します。
+# @endif
+#
+# @if english
+# Returns a script string that posts the document height to the parent frame via postMessage.
+# @endif
+#
+# @return str  scriptタグ付きの文字列 / Script string with <script> tag
 def _iframe_height_reporter_script() -> str:
     return r"""
 <script>
@@ -101,8 +160,24 @@ def _iframe_height_reporter_script() -> str:
 """
 
 
+##
+# @brief Wrap inner HTML into body.html template / inner HTMLをbody.html用テンプレートに包む
+#
+# @if japanese
+# MD変換後のHTMLをカードデザイン付きのbody.htmlとして整形し、iframe高さ通知スクリプトを差し込みます。
+# ページタイトルは引数titleをそのまま利用します。
+# @endif
+#
+# @if english
+# Formats converted Markdown HTML into a body.html layout with styling and embeds the iframe height reporter.
+# Uses the provided title for the document title tag.
+# @endif
+#
+# @param inner_html [in]  本文HTML / Inner HTML content
+# @param title [in]  タイトル文字列 / Title string
+# @return str  完成したbody.html文字列 / Final body.html string
 def wrap_body_html(inner_html: str, title: str) -> str:
-    # body.html は “どこから開かれても” スタイルが崩れないよう、基本は埋め込みCSS
+    # body.html は iframe 埋め込みを想定し、余計なスクリプトを避けて最小限のCSSを付与
     return f"""<!doctype html>
 <html lang="ja">
 <head>

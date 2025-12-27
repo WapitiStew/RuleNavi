@@ -1,10 +1,25 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
+##
+# @file src/sitegen/pages.py
+# @brief HTML page builders for static site.
+#
+# @if japanese
+# ナビゲーションや各ページのHTMLを生成し、出力ファイルへ書き込むユーティリティです。
+# tree_data.jsの読み込み有無やアイコン有無を切り替えられ、スタブページもまとめて生成します。
+# @endif
+#
+# @if english
+# Utilities to build navigation and page HTML for the static site and write them to disk.
+# Handles optional tree_data.js inclusion, icon display, and generates stub pages as needed.
+# @endif
+#
+
 from __future__ import annotations
 
-from pathlib import Path
-from typing import List, Tuple
+from pathlib import Path  # [JP] 標準: パス操作 / [EN] Standard: path utilities
+from typing import List, Tuple  # [JP] 標準: 型ヒント / [EN] Standard: type hints
 
-from sitegen.logger import Logger
+from sitegen.logger import Logger  # [JP] 自作: ログ出力 / [EN] Local: logger utility
 
 # (page_id, label, filename)
 NAV_PAGES: List[Tuple[str, str, str]] = [
@@ -18,6 +33,20 @@ NAV_PAGES: List[Tuple[str, str, str]] = [
 ]
 
 
+##
+# @brief Build navigation HTML tabs / ナビゲーションのタブHTMLを生成する
+#
+# @if japanese
+# nav_pagesに基づきタブリンクを生成し、active_idに一致するタブへis-activeクラスを付与します。
+# @endif
+#
+# @if english
+# Generates navigation tab links from nav_pages, adding is-active class to the tab matching active_id.
+# @endif
+#
+# @param active_id [in]  アクティブなタブID / Active tab id
+# @param nav_pages [in]  (id,label,href)のリスト / List of (id, label, href)
+# @return str  生成したHTML文字列 / Generated HTML
 def build_nav_html(active_id: str, nav_pages: List[Tuple[str, str, str]]) -> str:
     parts: List[str] = []
     for pid, label, href in nav_pages:
@@ -26,6 +55,33 @@ def build_nav_html(active_id: str, nav_pages: List[Tuple[str, str, str]]) -> str
     return "\n".join(parts)
 
 
+##
+# @brief Build a full HTML page / 単一ページのHTML全文を組み立てる
+#
+# @if japanese
+# サイトタイトル、ナビゲーション、左右パネルのHTML、アイコンやtree_data.jsの有無を受け取り、完全なHTML文字列を返します。
+# iframe内で表示するためのデータ属性や設定オブジェクト(window.RULENAVI_CFG)も埋め込みます。
+# @endif
+#
+# @if english
+# Assembles a complete HTML page using site title, navigation, left/right panel content, icon/tree_data.js flags,
+# and embeds configuration (window.RULENAVI_CFG) for iframe rendering.
+# @endif
+#
+# @param site_title [in]  サイトタイトル / Site title
+# @param page_title [in]  ページタイトル / Page title
+# @param active_nav_id [in]  アクティブタブID / Active nav id
+# @param build_base_url [in]  ビルドベースURL / Build base URL
+# @param has_icon [in]  アイコン有無 / Whether icon exists
+# @param icon_filename [in]  アイコンファイル名 / Icon filename
+# @param left_header_title [in]  左パネル見出し / Left header title
+# @param left_header_sub [in]  左パネルサブタイトル / Left header subtitle
+# @param left_body_html [in]  左パネル本文HTML / Left body HTML
+# @param right_breadcrumb [in]  右側パンくず / Right breadcrumb text
+# @param page_id_for_js [in]  JS用ページID / Page id for JS config
+# @param include_tree_data [in]  tree_data.jsを含めるか / Whether to include tree_data.js
+# @param nav_pages [in]  ナビゲーションリスト / Navigation entries
+# @return str  完成したHTML文字列 / Completed HTML string
 def build_page_html(
     *,
     site_title: str,
@@ -111,12 +167,56 @@ def build_page_html(
 """
 
 
+##
+# @brief Write text to file with logging / テキストをファイルへ書き込みログ出力する
+#
+# @if japanese
+# 親ディレクトリを作成し、UTF-8でテキストを書き込んでからログへ出力します。
+# @endif
+#
+# @if english
+# Ensures parent directory exists, writes UTF-8 text, and logs the destination path.
+# @endif
+#
+# @param path [in]  出力パス / Target path
+# @param text [in]  書き込む内容 / Text content
+# @param log [in]  Loggerインスタンス / Logger instance
 def write_text(path: Path, text: str, log: Logger) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
     log.info(f"write: {path}")
 
 
+##
+# @brief Generate all static pages / 全ての静的ページを生成する
+#
+# @if japanese
+# TOPとrulesページを生成し、残りのページはスタブとしてwrite_stubで出力します。アイコンやtree_dataの有無を反映し、書き込み後にログを出します。
+# @endif
+#
+# @if english
+# Generates TOP and rules pages plus stub pages for others via write_stub, reflecting icon and tree_data availability, and logs each write.
+# @endif
+#
+# @param out_dir [in]  出力ディレクトリ / Output directory
+# @param site_title [in]  サイトタイトル / Site title
+# @param build_base_url [in]  ビルドベースURL / Build base URL
+# @param has_icon [in]  アイコン有無 / Whether icon exists
+# @param icon_filename [in]  アイコンファイル名 / Icon filename
+# @param nav_pages [in]  ナビページリスト / Navigation pages list
+# @param log [in]  Loggerインスタンス / Logger instance
+# @details
+# @if japanese
+# - TOP(index.html)とrules.htmlを特別処理し、残りはwrite_stubで共通処理。
+# - write_stubは左パネルにStubカードを入れ、ページIDとタイトルでHTMLを生成。
+# - 生成ファイルはwrite_textで書き込み、ログを残す。
+# @endif
+# @if english
+# - Handles TOP(index.html) and rules.html specially; others use write_stub helper.
+# - write_stub inserts a stub card on the left and builds HTML using the page id/title.
+# - Files are written via write_text with logging.
+# @endif
+#
 def write_all_pages(
     *,
     out_dir: Path,
@@ -131,7 +231,7 @@ def write_all_pages(
     top_left = """
 <div class="stub-card">
   <h2>TOP</h2>
-  <p>ここはTOPページ（ダミー）です。今後、ダッシュボードやショートカットを置けます。</p>
+   <p>ここはTOPページ（ダミー）です。今後、ダッシュボードやショートカットを置けます。</p>
 </div>
 """.strip()
     write_text(
@@ -143,8 +243,8 @@ def write_all_pages(
             build_base_url=build_base_url,
             has_icon=has_icon,
             icon_filename=icon_filename,
-            left_header_title="メニュー",
-            left_header_sub="今後拡張予定",
+            left_header_title="分類ツリー",
+            left_header_sub="クリックで本文表示",
             left_body_html=top_left,
             right_breadcrumb="TOP",
             page_id_for_js="top",
@@ -178,6 +278,10 @@ def write_all_pages(
 
     # stubs
     def write_stub(page_id: str, title: str, filename: str) -> None:
+        """
+        Stub page writer for product/service/wiki/etc.
+        """
+
         left_html = f"""
 <div class="stub-card">
   <h2>{title}</h2>

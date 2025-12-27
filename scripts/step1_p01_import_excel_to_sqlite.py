@@ -1,33 +1,69 @@
-from pathlib import Path
-from typing import List, Tuple
-import sqlite3
-import pandas as pd
-import re
+﻿# -*- coding: utf-8 -*-
+##
+# @file scripts/step1_p01_import_excel_to_sqlite.py
+# @brief Import Excel sheets into SQLite tables based on settings.
+#
+# @if japanese
+# setting.csv で指定されたExcelファイルとスキーマ定義を読み込み、SQLite DBにテーブルを作成してデータを投入するスクリプトです。
+# 各シートの先頭行をヘッダとし、不要な列を除去した上でINSERTします。開発・検証用に既存DBを削除して作り直します。
+# ファイルパスやテーブル名は全て設定値から取得し、ログにSQLスクリプトを出力します。
+# @endif
+#
+# @if english
+# Script that reads the configured Excel file and schema definitions from setting.csv, creates SQLite tables, and inserts sheet data.
+# Uses the first row as headers, prunes unused columns, and recreates the database from scratch for development/testing.
+# All paths, table names, and column names are pulled from settings, and generated SQL scripts are logged.
+# @endif
+#
 
-import read_setting as rs
-import setting_key as sk
-import setting_helper as sh
+from pathlib import Path  # [JP] 標準: パス操作ユーティリティ / [EN] Standard: path utilities
+from typing import List, Tuple  # [JP] 標準: 型ヒント（リスト・タプル） / [EN] Standard: type hints for lists/tuples
+import sqlite3  # [JP] 標準: SQLite接続 / [EN] Standard: SQLite connectivity
+import pandas as pd  # [JP] 外部: Excel読み込みとデータ整形 / [EN] External: Excel loading and data shaping
+import re  # [JP] 標準: 正規表現による識別子検証 / [EN] Standard: regex for identifier validation
+
+import read_setting as rs  # [JP] 自作: setting.csv 読み込みヘルパ / [EN] Local: helpers to load setting.csv
+import setting_key as sk  # [JP] 自作: 設定キー定数群 / [EN] Local: constants for settings
+import setting_helper as sh  # [JP] 自作: ルール関連パス補助 / [EN] Local: path helpers for rule resources
 
 
-# Excelシートを「1行目をヘッダとして」「余計な列を削った」形で読み込む
+##
+# @brief Load and clean an Excel sheet / Excelシートを読み込んで整形する
+#
+# @if japanese
+# Excelファイルから指定シートをヘッダなしで読み込み、1行目をヘッダに採用します。
+# 空の列や重複ヘッダを除去し、文字列列の前後空白をトリムして空文字や"nan"をNoneに置換します。
+# SQLite挿入に適した整形済みDataFrameを返します。
+# @endif
+#
+# @if english
+# Reads a specific Excel sheet without headers, promotes the first row to header names,
+# drops empty or duplicate columns, trims whitespace from string columns, and replaces empty/"nan" with None.
+# Returns a cleaned DataFrame ready for SQLite insertion.
+# @endif
+#
+# @param excel_path [in]  Excelファイルのパス / Path to the Excel file
+# @param sheet_name [in]  読み込むシート名 / Target sheet name to read
+# @return pd.DataFrame  整形済みのDataFrame / Cleaned DataFrame for insertion
 def load_sheet_clean(excel_path: Path, sheet_name: str) -> pd.DataFrame:
+    # [JP] シート情報をログ出力 / [EN] Log which Excel file and sheet are read
     print(f"Exxcel file: {excel_path}   /   Sheet: {sheet_name}")
 
-    # header=None で「全部データ」として読み込む
+    # [JP] ヘッダなしで生データを取得 / [EN] Load raw data without headers
     df_raw = pd.read_excel(excel_path, sheet_name=sheet_name, header=None)
 
-    # 1行目をヘッダ行として取り出す
+    # [JP] 1行目をヘッダとして抽出 / [EN] Extract first row as header
     header = df_raw.iloc[0]
-    df = df_raw.iloc[1:].copy()  # 2行目以降がデータ
-    df.columns = header  # ヘッダを列名としてセット
+    df = df_raw.iloc[1:].copy()  # 2行目以降がデータ / data rows start at index 1
+    df.columns = header  # [JP] ヘッダを列名に設定 / [EN] Apply header row as column names
 
-    # 見出しが NaN（空）の列は削除
+    # [JP] NaNや空の列を除去 / [EN] Drop columns with NaN or empty headers
     df = df.loc[:, ~df.columns.isna()]
 
-    # 見出しが重複している列は「最初の1個だけ残す」
+    # [JP] ヘッダ重複は最初の列のみ残す / [EN] Keep only the first occurrence of duplicated headers
     df = df.loc[:, ~df.columns.duplicated()]
 
-    # 文字列列の前後の空白をトリム
+    # [JP] 文字列列の前後空白を削除し空文字をNoneへ / [EN] Trim string columns and normalize blanks to None
     for col in df.columns:
         if df[col].dtype == object:
             df[col] = df[col].astype(str).str.strip()
@@ -36,13 +72,43 @@ def load_sheet_clean(excel_path: Path, sheet_name: str) -> pd.DataFrame:
     return df
 
 
+##
+# @brief Quote SQLite identifier safely / SQLiteの識別子を安全にクオートする
+#
+# @if japanese
+# テーブル・カラム名が安全なパターンに合致するか検証し、ダブルクォートで囲んだ識別子文字列を返します。
+# 許可されない文字が含まれる場合はValueErrorを送出します。
+# @endif
+#
+# @if english
+# Validates that a table/column name matches the allowed pattern and returns the double-quoted identifier string.
+# Raises ValueError when disallowed characters are present.
+# @endif
+#
+# @param name [in]  検証する識別子名 / Identifier name to validate
+# @return str  ダブルクォート済み識別子 / Double-quoted identifier
+# @throws ValueError 無効な識別子の場合 / If the identifier pattern is invalid
 def quote_ident(name: str) -> str:
-    # 安全のため、許可する名前を制限（必要なら緩めてOK）
+    # [JP] 許可パターンに合致するか正規表現で検証 / [EN] Validate identifier against regex pattern
     if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name):
         raise ValueError(f"Invalid table name: {name}")
-    return f'"{name}"'  # SQLiteの識別子クォート
+    return f'"{name}"'  # SQLiteの識別子クォート / SQLite identifier quoting
 
 
+##
+# @brief Build CREATE TABLE SQL / CREATE TABLE文を組み立てる
+#
+# @if japanese
+# 列定義のリストからCREATE TABLEスクリプトを生成します。列ごとにコメントを残し、識別子はquote_identで保護します。
+# @endif
+#
+# @if english
+# Generates a CREATE TABLE statement from column definitions, preserving remarks and quoting identifiers safely.
+# @endif
+#
+# @param table_name [in]  作成するテーブル名 / Target table name to create
+# @param col_defs [in]  (列名, 型, 備考)のリスト / List of (column, type, remark) tuples
+# @return str  CREATE TABLE SQL文字列 / Generated CREATE TABLE SQL string
 def build_create_table_sql(table_name: str, col_defs: List[Tuple[str, str, str]]) -> str:
     """列定義から CREATE TABLE 文を生成する。"""
     lines = []
@@ -51,13 +117,13 @@ def build_create_table_sql(table_name: str, col_defs: List[Tuple[str, str, str]]
     for i, (col, typ, remark) in enumerate(col_defs):
         line = f"    {quote_ident(col)} {typ}"
 
-        # ★カンマはコメントより前に付ける
+        # [JP] カンマはコメントより前に付加 / [EN] Add comma before optional remark
         if i < n - 1:
             line += ","
 
         if remark and str(remark).strip() and str(remark).strip().lower() != "nan":
             r = str(remark).strip()
-            # もし "--" が付いてなければ付ける（好みで）
+            # もし "--" が付いてなければ付ける（好みで） / prepend "--" to remarks if missing
             if not r.startswith("--"):
                 r = "-- " + r
             line += f"  {r}"
@@ -68,10 +134,37 @@ def build_create_table_sql(table_name: str, col_defs: List[Tuple[str, str, str]]
     return f"CREATE TABLE {quote_ident(table_name)} (\n{body}\n);\n"
 
 
-# SQLite に明示的なスキーマを作る
+##
+# @brief Create SQLite tables based on settings / 設定に基づきSQLiteテーブルを作成する
+#
+# @if japanese
+# setting.csv からテーブル名と列定義を取得し、既存テーブルを削除した上でCREATE TABLEスクリプトを実行します。
+# 主要テーブル（RULES, CAT_TYPE, CAT_MAJOR, CAT_SUB, CAT_STATE）の作成とコミットまで行います。
+# @endif
+#
+# @if english
+# Drops existing tables, builds CREATE TABLE scripts from setting.csv definitions, and executes them for core tables
+# (RULES, CAT_TYPE, CAT_MAJOR, CAT_SUB, CAT_STATE), committing the schema setup.
+# @endif
+#
+# @param csv [in]  設定CSV DataFrame / DataFrame for setting.csv
+# @param conn [in]  SQLite接続オブジェクト / SQLite connection object
+# @details
+# @if japanese
+# - 設定からテーブル名を収集しDROP文を生成して実行する。
+# - グループごとの列定義を取得し、CREATE TABLE文を組み立てる。
+# - 生成したDDLを実行しコミットする。
+# @endif
+# @if english
+# - Collect table names from settings and run DROP statements.
+# - Fetch column definitions per group and assemble CREATE TABLE statements.
+# - Execute generated DDL and commit the schema changes.
+# @endif
+#
 def create_tables(csv: pd.DataFrame, conn: sqlite3.Connection) -> None:
     cur = conn.cursor()
 
+    # [JP] 設定から主要テーブル名を取得 / [EN] Fetch core table names from settings
     tbl_rules = rs.get_setting_value(csv, sk.KEY_TBL_RULES)
     tbl_cat_type = rs.get_setting_value(csv, sk.KEY_TBL_CAT_TYPE)
     tbl_cat_major = rs.get_setting_value(csv, sk.KEY_TBL_CAT_MAJOR)
@@ -86,7 +179,7 @@ def create_tables(csv: pd.DataFrame, conn: sqlite3.Connection) -> None:
         "CAT_STATE": tbl_cat_state,
     }
 
-    # Drop
+    # [JP] 既存テーブルをDROP / [EN] Drop existing tables before recreation
     drop_script = "\n".join(
         f"DROP TABLE IF EXISTS {quote_ident(name)};" for name in table_names.values()
     )
@@ -94,11 +187,11 @@ def create_tables(csv: pd.DataFrame, conn: sqlite3.Connection) -> None:
     print(drop_script)
     cur.executescript(drop_script)
 
-    # Column definitions (ITM_***)
+    # [JP] 列定義をグループ単位で取得 / [EN] Fetch column definitions grouped by table
     groups = list(table_names.keys())
     item_defs = rs.get_setting_sql_table_item(csv, groups)
 
-    # Create
+    # [JP] CREATE TABLEスクリプトを組み立て実行 / [EN] Build and run CREATE TABLE scripts
     create_script = ""
     for group, tbl_name in table_names.items():
         create_script += build_create_table_sql(tbl_name, item_defs[group])
@@ -108,17 +201,47 @@ def create_tables(csv: pd.DataFrame, conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
+##
+# @brief Command entry to import Excel into SQLite / ExcelをSQLiteへ取り込むエントリーポイント
+#
+# @if japanese
+# setting.csv を読み込み、DBパスを解決して既存DBを削除後、テーブル作成とデータ投入を行います。
+# 各カテゴリ・ルール・リクエスト関連シートをロードし、設定で指定された列のみを残してto_sqlで挿入します。
+# 実行結果とファイルパスを標準出力に表示し、完了時にDB生成を通知します。
+# @endif
+#
+# @if english
+# Loads settings, resolves the DB path, deletes any existing DB, creates tables, and inserts data from multiple Excel sheets.
+# Each category/rule/request sheet is loaded, trimmed to configured columns, and inserted via to_sql.
+# Paths and actions are printed to stdout, and a completion message indicates DB creation.
+# @endif
+#
+# @details
+# @if japanese
+# - setting.csv を2回読み込み、ExcelパスとDBパスを決定する。
+# - DB親フォルダの存在確認と作成、既存DB削除を行う。
+# - create_tablesでDDLを実行後、各シートをロードし列を絞り込む。
+# - pandasのto_sqlで各テーブルへデータをINSERTし、DBをクローズする。
+# @endif
+# @if english
+# - Load setting.csv (twice) to resolve Excel and DB paths.
+# - Validate/create DB parent directory and delete any existing DB file.
+# - Run create_tables to set up schema, then load each sheet and trim columns.
+# - Insert data into tables via pandas.to_sql and close the database connection.
+# @endif
+#
 def main():
-    setting_csv = rs.load_setting_csv()  # sub.py から見た data/sample.csv を読む
+    # [JP] 設定CSVを読み込みExcel/DB情報を取得 / [EN] Load settings to resolve Excel/DB info
+    setting_csv = rs.load_setting_csv()
     print(setting_csv)
 
-    setting_csv = rs.load_setting_csv()  # sub.py から見た data/sample.csv を読む
+    setting_csv = rs.load_setting_csv()
     src_excel = rs.get_setting_value(setting_csv, sk.KEY_SRC_EXCEL)
     db_name = rs.get_setting_value(setting_csv, sk.KEY_DB_NAME)
-    EXCEL_PATH = Path(
-        sh.resrc_file_fullpath(setting_csv, src_excel)
-    )  # Excel ファイル名（必要なら変更）
-    DB_PATH = Path(sh.rules_file_fullpath(setting_csv, db_name))  # 作成される SQLite ファイル
+
+    # [JP] ExcelとDBのフルパスを解決 / [EN] Resolve full paths for Excel and DB
+    EXCEL_PATH = Path(sh.resrc_file_fullpath(setting_csv, src_excel))  # Excel ファイル名（必要なら変更）
+    DB_PATH = Path(sh.rules_file_fullpath(setting_csv, db_name))  # 作成されるSQLite ファイル
     print(f"Excel Path: {EXCEL_PATH}")
     print(f"DB Path:    {DB_PATH}")
 
@@ -126,25 +249,26 @@ def main():
         print(f"Excel file not found: {EXCEL_PATH}")
         return
 
-    # 親パスが「存在するけどフォルダじゃない」事故も先に潰す
+    # [JP] DB親パスの存在と種別を確認 / [EN] Ensure DB parent path exists and is a directory
     parent = DB_PATH.parent
     if parent.exists() and not parent.is_dir():
         raise RuntimeError(f"DB parent path exists but is not a directory: {parent}")
 
-    # 無ければ作る／あれば作らない
+    # [JP] 親ディレクトリを必要に応じて作成 / [EN] Create parent directory if missing
     parent.mkdir(parents=True, exist_ok=True)
 
-    # 既存DBを削除して作り直す（初期開発フェーズなので割り切り）
+    # [JP] 既存DBを削除しリフレッシュ / [EN] Remove existing DB to rebuild from scratch
     if DB_PATH.exists():
         print(f"Delete DB file: {DB_PATH}")
         DB_PATH.unlink()
 
+    # [JP] SQLite接続を確立 / [EN] Open SQLite connection
     sql_file = sqlite3.connect(DB_PATH)
 
-    # スキーマ作成（カラム名・型をここで固定）
+    # [JP] スキーマ作成（カラム名・型を固定） / [EN] Create schema with fixed columns/types
     create_tables(setting_csv, sql_file)
 
-    # 各シートを読み込む
+    # [JP] 各シートを読み込み / [EN] Load sheets
     rules_df = load_sheet_clean(EXCEL_PATH, rs.get_setting_value(setting_csv, sk.KEY_TBL_RULES))
     cat_key_type_df = load_sheet_clean(
         EXCEL_PATH, rs.get_setting_value(setting_csv, sk.KEY_TBL_CAT_TYPE)
@@ -178,9 +302,8 @@ def main():
     )
     request_df = load_sheet_clean(EXCEL_PATH, rs.get_setting_value(setting_csv, sk.KEY_TBL_REQUEST))
 
-    # --- 重要ポイント ---
-    # DataFrame の列を「テーブルに実際に存在する列だけ」に絞る
-    # （Excel側に余分な列があってもここで無視できる）
+    # --- 重要ポイント ------------------------------------------------------
+    # [JP] DataFrameの列を存在する列に限定 / [EN] Restrict DataFrame columns to existing table columns
     rules_df = rules_df[
         [
             rs.get_setting_value(setting_csv, sk.KEY_ITM_RULES_PKEY),
@@ -330,7 +453,7 @@ def main():
 
     """
     """
-    # DataFrame → 既に定義済みのテーブルに INSERT
+    # [JP] DataFrameを既存テーブルにINSERT / [EN] Insert DataFrames into existing tables
     rules_df.to_sql(
         rs.get_setting_value(setting_csv, sk.KEY_TBL_RULES),
         sql_file,

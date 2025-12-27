@@ -1,13 +1,26 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
+##
+# @file scripts/step2_p05_make_site_stub.py
+# @brief Build serverless site stub (HTML/CSS/JS) from generated data.
+#
+# @if japanese
+# tree.json とMarkdownをHTMLへ変換し、静的サイトの土台をbuild/rules/html配下に生成するステップです。
+# 設定に基づき出力ディレクトリやサイトタイトル、アイコン等を決定し、アセットやページ、data/tree_data.jsを配置します。
+# DBや元データは変更せず、生成物のみを出力します。
+# @endif
+#
+# @if english
+# Generates the static site scaffold (HTML/CSS/JS) under build/rules/html using tree.json and Markdown conversions.
+# Resolves output directories, site title, and icon from settings, writes assets/pages/tree_data.js, and leaves source data untouched.
+# @endif
+#
 """
-Step2-6: サーバーレス HTML サイト生成（分割版）
-
-出力（既定）
-  build/rules/html/
+Step2-6: サーバーレス HTML サイトの雛形を構築するスクリプト。
+出力先は  build/rules/html/
     index.html              (TOP)
     products.html
     services.html
-    rules.html              (基準一覧)
+    rules.html              (一覧表示)
     search.html
     wiki.html
     howto.html
@@ -16,65 +29,93 @@ Step2-6: サーバーレス HTML サイト生成（分割版）
       app.js                (共通JS)
       icon.png              (resource にあればコピー)
     data/
-      tree_data.js          (rules 用：ツリーデータ埋め込み)
+      tree_data.js          (rules 階層ツリーJSONをJS化したもの)
 
-ポイント
-- file:// 直開きでも動く（fetchを使わない）
-- 右ペインのスクロールは親側で統一（iframeは高さ追従）
-- 左ペインはドラッグで幅変更 + localStorage 保存
-- ツリー展開状態は localStorage で維持（TOPへ戻っても維持）
+ローカル - file:// で開けるようにfetchを使わず完結。
+- 外部へのfetchや環境依存は無し。
+- ブラウザのlocalStorageを使い、状態を保持する。
 """
 
 from __future__ import annotations
 
-import argparse
-from pathlib import Path
+import argparse  # [JP] 標準: CLI引数処理 / [EN] Standard: CLI argument parsing
+from pathlib import Path  # [JP] 標準: パス操作 / [EN] Standard: path utilities
 
 # --- project modules (your repo) ---
 try:
-    import utility.read_setting as rs  # type: ignore
+    import utility.read_setting as rs  # type: ignore  # [JP] 自作: 設定読込（utility配下） / [EN] Local utility: load settings
 except Exception:
-    import read_setting as rs  # type: ignore
+    import read_setting as rs  # type: ignore  # [JP] 自作: 設定読込（通常パス） / [EN] Local: fallback settings loader
 
 try:
-    import setting_key as sk  # type: ignore
+    import setting_key as sk  # type: ignore  # [JP] 自作: 設定キー定数 / [EN] Local: setting keys
 except Exception:
     sk = None  # type: ignore
 
 try:
-    import setting_helper as sh  # type: ignore
+    import setting_helper as sh  # type: ignore  # [JP] 自作: パス解決ヘルパ / [EN] Local: path helpers
 except Exception:
     sh = None  # type: ignore
 
 # --- sitegen (this split) ---
-from sitegen.logger import Logger
+from sitegen.logger import Logger  # [JP] 自作: ロガー / [EN] Local: logger
 from sitegen.settings import (
-    project_root,
-    resolve_build_dir,
-    resolve_site_dir,
-    resolve_tree_json_fullpath,
-    resolve_resource_dir,
-    resolve_site_icon_filename,
-    resolve_site_title,
-    resolve_md_body_filename,
-    compute_build_base_url,
+    project_root,  # [JP] 自作: プロジェクトルート解決 / [EN] Local: resolve project root
+    resolve_build_dir,  # [JP] 自作: buildディレクトリ解決 / [EN] Local: resolve build dir
+    resolve_site_dir,  # [JP] 自作: サイト出力先解決 / [EN] Local: resolve site output dir
+    resolve_tree_json_fullpath,  # [JP] 自作: tree.jsonパス解決 / [EN] Local: resolve tree.json path
+    resolve_resource_dir,  # [JP] 自作: リソースディレクトリ解決 / [EN] Local: resolve resource dir
+    resolve_site_icon_filename,  # [JP] 自作: アイコンファイル名解決 / [EN] Local: resolve icon filename
+    resolve_site_title,  # [JP] 自作: サイトタイトル解決 / [EN] Local: resolve site title
+    resolve_md_body_filename,  # [JP] 自作: Markdown本文ファイル名解決 / [EN] Local: resolve md body filename
+    compute_build_base_url,  # [JP] 自作: base URL計算 / [EN] Local: compute base URL
 )
 from sitegen.data import (
-    load_tree_json,
-    mark_and_collect_md_targets,
-    convert_md_targets_to_html,
-    write_tree_data_js,
+    load_tree_json,  # [JP] 自作: tree.json読込 / [EN] Local: load tree.json
+    mark_and_collect_md_targets,  # [JP] 自作: MD変換対象の抽出 / [EN] Local: collect md targets
+    convert_md_targets_to_html,  # [JP] 自作: MDをHTMLへ変換 / [EN] Local: convert md to html
+    write_tree_data_js,  # [JP] 自作: tree_data.js出力 / [EN] Local: write tree_data.js
 )
 from sitegen.assets import (
-    write_assets,
-    copy_icon_if_exists,
+    write_assets,  # [JP] 自作: CSS/JS出力 / [EN] Local: write assets
+    copy_icon_if_exists,  # [JP] 自作: アイコンコピー / [EN] Local: copy icon if exists
 )
 from sitegen.pages import (
-    NAV_PAGES,
-    write_all_pages,
+    NAV_PAGES,  # [JP] 自作: ナビゲーション定義 / [EN] Local: navigation definition
+    write_all_pages,  # [JP] 自作: HTMLページ生成 / [EN] Local: generate HTML pages
 )
 
 
+##
+# @brief Main entry to build static site / 静的サイト生成のメイン処理
+#
+# @if japanese
+# CLI引数で出力先やログ詳細度を受け取り、設定ファイルを読み込んでbuild先/サイト先を解決します。
+# tree.jsonを読み込みMDをHTMLに変換し、data/js/assets/pagesを出力してインデックスHTMLを生成します。
+# アイコンのコピーやbase URL計算も行い、完了後にindex.htmlのパスをログ表示します。
+# @endif
+#
+# @if english
+# Parses CLI args for output directory and verbosity, loads settings, resolves build/site paths, and reads tree.json.
+# Converts Markdown to HTML, writes data/js/assets/pages, computes the base URL, and copies the site icon when available.
+# Logs target directories and the resulting index.html path upon completion.
+# @endif
+#
+# @details
+# @if japanese
+# - 設定読込後、build/siteディレクトリを決定する。
+# - tree.jsonを読み込み、MDターゲットを抽出してHTMLへ変換する。
+# - dataディレクトリへtree_data.jsを出力し、assetsとページHTMLを生成する。
+# - アイコンのコピーとbase URL算出を行い、最後に出力先をログ表示する。
+# @endif
+# @if english
+# - After loading settings, determine build/site directories.
+# - Load tree.json, collect Markdown targets, and convert them to HTML.
+# - Output tree_data.js to the data directory and generate assets plus HTML pages.
+# - Copy icon if present, compute base URL, and log the output location.
+# @endif
+#
+# @return int  終了コード / Exit code
 def main() -> int:
     parser = argparse.ArgumentParser(description="Step2-6: build serverless site (split version).")
     parser.add_argument("--quiet", action="store_true", help="less logs (default: verbose)")
@@ -86,7 +127,7 @@ def main() -> int:
     log = Logger(verbose=(not args.quiet))
 
     # ------------------------------------------------------------
-    # 設定読み込み
+    # 設定読込と出力パス解決 / Load settings and resolve output paths
     # ------------------------------------------------------------
     setting_csv = rs.load_setting_csv()
     root = project_root()
@@ -106,7 +147,7 @@ def main() -> int:
     log.info(f"buildBaseUrl  : '{build_base_url}'")
 
     # ------------------------------------------------------------
-    # tree.json 読み込み
+    # tree.json 読み込み / Load tree.json
     # ------------------------------------------------------------
     tree_json = resolve_tree_json_fullpath(setting_csv, root, build_dir, rs, sk, sh)
     if not tree_json.exists():
@@ -115,7 +156,7 @@ def main() -> int:
     tree = load_tree_json(tree_json, log)
 
     # ------------------------------------------------------------
-    # MD -> body.html 変換（iframeで表示するため）
+    # MD -> body.html へ変換 / Convert Markdown to HTML
     # ------------------------------------------------------------
     md_name = resolve_md_body_filename(setting_csv, rs, sk)
     count_nodes, targets = mark_and_collect_md_targets(tree, build_dir, md_name, log)
@@ -125,27 +166,27 @@ def main() -> int:
     convert_md_targets_to_html(targets, log)
 
     # ------------------------------------------------------------
-    # data 出力（file://対応のため fetch せず JS に埋め込み）
+    # data 出力 (file://対応用のJS) / Output data (JS for file://)
     # ------------------------------------------------------------
     data_dir = site_dir / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
     write_tree_data_js(data_dir, tree, log)
 
     # ------------------------------------------------------------
-    # assets 出力（共通CSS/JS）
+    # assets 出力 (CSS/JS/Icon) / Output assets
     # ------------------------------------------------------------
     assets_dir = site_dir / "assets"
     assets_dir.mkdir(parents=True, exist_ok=True)
 
     write_assets(assets_dir, log)
 
-    # icon.png のコピー（resource/icon.png がなければデフォルト表示）
+    # icon.png のコピー（存在すれば） / Copy icon.png if present
     res_dir = resolve_resource_dir(setting_csv, root, rs, sk)
     icon_name = resolve_site_icon_filename(setting_csv, rs, sk)
     has_icon = copy_icon_if_exists(res_dir, icon_name, assets_dir, log)
 
     # ------------------------------------------------------------
-    # pages 出力（index=TOP / rules=基準一覧）
+    # ページ生成 (index, rules など) / Generate pages
     # ------------------------------------------------------------
     site_title = resolve_site_title(setting_csv, rs, sk)
     write_all_pages(
