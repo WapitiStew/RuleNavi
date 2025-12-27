@@ -4,10 +4,10 @@
 # @brief HTML page builders for static site.
 #
 # @if japanese
-# Ã“IƒTƒCƒgŒü‚¯‚ÌƒiƒrƒQ[ƒVƒ‡ƒ“ƒ^ƒu‚ÆŠeƒy[ƒWHTML‚ğ‘g‚İ—§‚ÄAw’èƒpƒX‚Ö‘‚«o‚µ‚Ü‚·B
-# “ü—Í: ƒTƒCƒgƒ^ƒCƒgƒ‹‚âƒx[ƒXURLAƒcƒŠ[JSON‚Ì—L–³AƒAƒCƒRƒ“—L–³A¶‰Eƒpƒlƒ‹‚Ì–{•¶HTMLB
-# o—Í: Š®¬‚µ‚½HTML•¶š—ñ‚ğƒtƒ@ƒCƒ‹‚Ö•Û‘¶‚µ‚Ü‚·BƒƒWƒbƒN‚âƒf[ƒ^‚Í•ÏX‚µ‚Ü‚¹‚ñB
-# ’ˆÓ: “n‚³‚ê‚½HTML•¶š—ñ‚ğ‚»‚Ì‚Ü‚Ü–„‚ß‚Ş‚½‚ßAƒGƒXƒP[ƒvÏ‚İ‚Å‚ ‚é‚±‚Æ‚ğ‘O’ñ‚Æ‚µ‚Ü‚·B
+# é™çš„ã‚µã‚¤ãƒˆå‘ã‘ã®ãƒŠãƒ“ã‚²ãƒ¼ã‚·ãƒ§ãƒ³ã‚¿ãƒ–ã¨å„ãƒšãƒ¼ã‚¸HTMLã‚’çµ„ã¿ç«‹ã¦ã€æŒ‡å®šãƒ‘ã‚¹ã¸æ›¸ãå‡ºã—ã¾ã™ã€‚
+# å…¥åŠ›: ã‚µã‚¤ãƒˆã‚¿ã‚¤ãƒˆãƒ«ã‚„ãƒ™ãƒ¼ã‚¹URLã€ãƒ„ãƒªãƒ¼JSONã®æœ‰ç„¡ã€ã‚¢ã‚¤ã‚³ãƒ³æœ‰ç„¡ã€å·¦å³ãƒ‘ãƒãƒ«ã®æœ¬æ–‡HTMLã€‚
+# å‡ºåŠ›: å®Œæˆã—ãŸHTMLæ–‡å­—åˆ—ã‚’ãƒ•ã‚¡ã‚¤ãƒ«ã¸ä¿å­˜ã—ã¾ã™ã€‚ãƒ­ã‚¸ãƒƒã‚¯ã‚„ãƒ‡ãƒ¼ã‚¿ã¯å¤‰æ›´ã—ã¾ã›ã‚“ã€‚
+# æ³¨æ„: æ¸¡ã•ã‚ŒãŸHTMLæ–‡å­—åˆ—ã‚’ãã®ã¾ã¾åŸ‹ã‚è¾¼ã‚€ãŸã‚ã€ã‚¨ã‚¹ã‚±ãƒ¼ãƒ—æ¸ˆã¿ã§ã‚ã‚‹ã“ã¨ã‚’å‰æã¨ã—ã¾ã™ã€‚
 # @endif
 #
 # @if english
@@ -20,42 +20,42 @@
 
 from __future__ import annotations
 
-from pathlib import Path  # [JP] •W€: ƒpƒX‘€ì / [EN] Standard: path utilities
-from typing import List, Tuple  # [JP] •W€: Œ^ƒqƒ“ƒg / [EN] Standard: type hints
+from pathlib import Path  # [JP] æ¨™æº–: ãƒ‘ã‚¹æ“ä½œ / [EN] Standard: path utilities
+from typing import List, Tuple  # [JP] æ¨™æº–: å‹ãƒ’ãƒ³ãƒˆ / [EN] Standard: type hints
 
-from sitegen.logger import Logger  # [JP] ©ì: ƒƒOo—Í / [EN] Local: logger utility
-from textio import write_text_utf8  # [JP] ©ì: UTF-8‘‚«‚İƒwƒ‹ƒp / [EN] Local: UTF-8 write helper
+from sitegen.logger import Logger  # [JP] è‡ªä½œ: ãƒ­ã‚°å‡ºåŠ› / [EN] Local: logger utility
+from textio import write_text_utf8  # [JP] è‡ªä½œ: UTF-8æ›¸ãè¾¼ã¿ãƒ˜ãƒ«ãƒ‘ / [EN] Local: UTF-8 write helper
 
-# [JP] ƒiƒrƒQ[ƒVƒ‡ƒ“—p‚Ì(page_id, ƒ‰ƒxƒ‹, ƒtƒ@ƒCƒ‹–¼)’è‹` / [EN] Navigation definitions: (page_id, label, filename)
+# [JP] ãƒŠãƒ“ã‚²ãƒ¼ã‚·ãƒ§ãƒ³ç”¨ã®(page_id, ãƒ©ãƒ™ãƒ«, ãƒ•ã‚¡ã‚¤ãƒ«å)å®šç¾© / [EN] Navigation definitions: (page_id, label, filename)
 NAV_PAGES: List[Tuple[str, str, str]] = [
     ("top", "TOP", "index.html"),
-    ("products", "»•i", "products.html"),
-    ("services", "ƒT[ƒrƒX", "services.html"),
-    ("rules", "Šî€ˆê——", "rules.html"),
-    ("search", "ŒŸõ", "search.html"),
+    ("products", "è£½å“", "products.html"),
+    ("services", "ã‚µãƒ¼ãƒ“ã‚¹", "services.html"),
+    ("rules", "åŸºæº–ä¸€è¦§", "rules.html"),
+    ("search", "æ¤œç´¢", "search.html"),
     ("wiki", "wiki", "wiki.html"),
     ("howto", "How to", "howto.html"),
 ]
 
 
 ##
-# @brief Build navigation HTML tabs / ƒiƒrƒQ[ƒVƒ‡ƒ“‚Ìƒ^ƒuHTML‚ğ¶¬‚·‚é
+# @brief Build navigation HTML tabs / ãƒŠãƒ“ã‚²ãƒ¼ã‚·ãƒ§ãƒ³ã®ã‚¿ãƒ–HTMLã‚’ç”Ÿæˆã™ã‚‹
 #
 # @if japanese
-# nav_pages‚ÉŠî‚Ã‚«ƒ^ƒuƒŠƒ“ƒN‚ğ¶¬‚µAactive_id‚Éˆê’v‚·‚éƒ^ƒu‚Öis-activeƒNƒ‰ƒX‚ğ•t—^‚µ‚Ü‚·B
+# nav_pagesã«åŸºã¥ãã‚¿ãƒ–ãƒªãƒ³ã‚¯ã‚’ç”Ÿæˆã—ã€active_idã«ä¸€è‡´ã™ã‚‹ã‚¿ãƒ–ã¸is-activeã‚¯ãƒ©ã‚¹ã‚’ä»˜ä¸ã—ã¾ã™ã€‚
 # @endif
 #
 # @if english
 # Generates navigation tab links from nav_pages, adding is-active class to the tab matching active_id.
 # @endif
 #
-# @param active_id [in]  ƒAƒNƒeƒBƒu‚Èƒ^ƒuID / Active tab id
-# @param nav_pages [in]  (id,label,href)‚ÌƒŠƒXƒg / List of (id, label, href)
-# @return str  ¶¬‚µ‚½HTML•¶š—ñ / Generated HTML
+# @param active_id [in]  ã‚¢ã‚¯ãƒ†ã‚£ãƒ–ãªã‚¿ãƒ–ID / Active tab id
+# @param nav_pages [in]  (id,label,href)ã®ãƒªã‚¹ãƒˆ / List of (id, label, href)
+# @return str  ç”Ÿæˆã—ãŸHTMLæ–‡å­—åˆ— / Generated HTML
 
 def build_nav_html(active_id: str, nav_pages: List[Tuple[str, str, str]]) -> str:
     parts: List[str] = []
-    # [JP] ƒ^ƒu‚²‚Æ‚ÉƒŠƒ“ƒN‚ğ¶¬‚µƒAƒNƒeƒBƒuó‘Ô‚ğ•t—^ / [EN] Build each tab link and mark active state
+    # [JP] ã‚¿ãƒ–ã”ã¨ã«ãƒªãƒ³ã‚¯ã‚’ç”Ÿæˆã—ã‚¢ã‚¯ãƒ†ã‚£ãƒ–çŠ¶æ…‹ã‚’ä»˜ä¸ / [EN] Build each tab link and mark active state
     for pid, label, href in nav_pages:
         cls = "tab is-active" if pid == active_id else "tab"
         parts.append(f'<a class="{cls}" href="./{href}" data-nav="{pid}">{label}</a>')
@@ -63,11 +63,11 @@ def build_nav_html(active_id: str, nav_pages: List[Tuple[str, str, str]]) -> str
 
 
 ##
-# @brief Build a full HTML page / ’Pˆêƒy[ƒW‚ÌHTML‘S•¶‚ğ‘g‚İ—§‚Ä‚é
+# @brief Build a full HTML page / å˜ä¸€ãƒšãƒ¼ã‚¸ã®HTMLå…¨æ–‡ã‚’çµ„ã¿ç«‹ã¦ã‚‹
 #
 # @if japanese
-# ƒTƒCƒgƒ^ƒCƒgƒ‹AƒiƒrƒQ[ƒVƒ‡ƒ“A¶‰Eƒpƒlƒ‹‚ÌHTMLAƒAƒCƒRƒ“‚âtree_data.js‚Ì—L–³‚ğó‚¯æ‚èAŠ®‘S‚ÈHTML•¶š—ñ‚ğ•Ô‚µ‚Ü‚·B
-# iframe“à‚Å•\¦‚·‚é‚½‚ß‚Ìƒf[ƒ^‘®«‚âİ’èƒIƒuƒWƒFƒNƒg(window.RULENAVI_CFG)‚à–„‚ß‚İ‚Ü‚·B
+# ã‚µã‚¤ãƒˆã‚¿ã‚¤ãƒˆãƒ«ã€ãƒŠãƒ“ã‚²ãƒ¼ã‚·ãƒ§ãƒ³ã€å·¦å³ãƒ‘ãƒãƒ«ã®HTMLã€ã‚¢ã‚¤ã‚³ãƒ³ã‚„tree_data.jsã®æœ‰ç„¡ã‚’å—ã‘å–ã‚Šã€å®Œå…¨ãªHTMLæ–‡å­—åˆ—ã‚’è¿”ã—ã¾ã™ã€‚
+# iframeå†…ã§è¡¨ç¤ºã™ã‚‹ãŸã‚ã®ãƒ‡ãƒ¼ã‚¿å±æ€§ã‚„è¨­å®šã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ(window.RULENAVI_CFG)ã‚‚åŸ‹ã‚è¾¼ã¿ã¾ã™ã€‚
 # @endif
 #
 # @if english
@@ -75,26 +75,26 @@ def build_nav_html(active_id: str, nav_pages: List[Tuple[str, str, str]]) -> str
 # and embeds configuration (window.RULENAVI_CFG) for iframe rendering.
 # @endif
 #
-# @param site_title [in]  ƒTƒCƒgƒ^ƒCƒgƒ‹ / Site title
-# @param page_title [in]  ƒy[ƒWƒ^ƒCƒgƒ‹ / Page title
-# @param active_nav_id [in]  ƒAƒNƒeƒBƒuƒ^ƒuID / Active nav id
-# @param build_base_url [in]  ƒrƒ‹ƒhƒx[ƒXURL / Build base URL
-# @param has_icon [in]  ƒAƒCƒRƒ“—L–³ / Whether icon exists
-# @param icon_filename [in]  ƒAƒCƒRƒ“ƒtƒ@ƒCƒ‹–¼ / Icon filename
-# @param left_header_title [in]  ¶ƒpƒlƒ‹Œ©o‚µ / Left header title
-# @param left_header_sub [in]  ¶ƒpƒlƒ‹ƒTƒuƒ^ƒCƒgƒ‹ / Left header subtitle
-# @param left_body_html [in]  ¶ƒpƒlƒ‹–{•¶HTML / Left body HTML
-# @param right_breadcrumb [in]  ‰E‘¤ƒpƒ“‚­‚¸ / Right breadcrumb text
-# @param page_id_for_js [in]  JS—pƒy[ƒWID / Page id for JS config
-# @param include_tree_data [in]  tree_data.js‚ğŠÜ‚ß‚é‚© / Whether to include tree_data.js
-# @param nav_pages [in]  ƒiƒrƒQ[ƒVƒ‡ƒ“ƒŠƒXƒg / Navigation entries
-# @return str  Š®¬‚µ‚½HTML•¶š—ñ / Completed HTML string
+# @param site_title [in]  ã‚µã‚¤ãƒˆã‚¿ã‚¤ãƒˆãƒ« / Site title
+# @param page_title [in]  ãƒšãƒ¼ã‚¸ã‚¿ã‚¤ãƒˆãƒ« / Page title
+# @param active_nav_id [in]  ã‚¢ã‚¯ãƒ†ã‚£ãƒ–ã‚¿ãƒ–ID / Active nav id
+# @param build_base_url [in]  ãƒ“ãƒ«ãƒ‰ãƒ™ãƒ¼ã‚¹URL / Build base URL
+# @param has_icon [in]  ã‚¢ã‚¤ã‚³ãƒ³æœ‰ç„¡ / Whether icon exists
+# @param icon_filename [in]  ã‚¢ã‚¤ã‚³ãƒ³ãƒ•ã‚¡ã‚¤ãƒ«å / Icon filename
+# @param left_header_title [in]  å·¦ãƒ‘ãƒãƒ«è¦‹å‡ºã— / Left header title
+# @param left_header_sub [in]  å·¦ãƒ‘ãƒãƒ«ã‚µãƒ–ã‚¿ã‚¤ãƒˆãƒ« / Left header subtitle
+# @param left_body_html [in]  å·¦ãƒ‘ãƒãƒ«æœ¬æ–‡HTML / Left body HTML
+# @param right_breadcrumb [in]  å³å´ãƒ‘ãƒ³ããš / Right breadcrumb text
+# @param page_id_for_js [in]  JSç”¨ãƒšãƒ¼ã‚¸ID / Page id for JS config
+# @param include_tree_data [in]  tree_data.jsã‚’å«ã‚ã‚‹ã‹ / Whether to include tree_data.js
+# @param nav_pages [in]  ãƒŠãƒ“ã‚²ãƒ¼ã‚·ãƒ§ãƒ³ãƒªã‚¹ãƒˆ / Navigation entries
+# @return str  å®Œæˆã—ãŸHTMLæ–‡å­—åˆ— / Completed HTML string
 # @details
 # @if japanese
-# - ƒAƒCƒRƒ“‚ÆƒiƒrHTML‚ğæ‚É\’z‚·‚éB
-# - tree_data.js‚ğ“Ç‚İ‚Ş‚©‚ğƒtƒ‰ƒO‚ÅØ‚è‘Ö‚¦‚éB
-# - window.RULENAVI_CFG‚Öƒx[ƒXURL‚Æƒy[ƒWID‚ğ–„‚ß‚İiframe•\¦‚É”õ‚¦‚éB
-# - f-string‚ÅŠ®¬HTML‚ğ‘g‚İ—§‚Ä‚Ä•Ô‚·B
+# - ã‚¢ã‚¤ã‚³ãƒ³ã¨ãƒŠãƒ“HTMLã‚’å…ˆã«æ§‹ç¯‰ã™ã‚‹ã€‚
+# - tree_data.jsã‚’èª­ã¿è¾¼ã‚€ã‹ã‚’ãƒ•ãƒ©ã‚°ã§åˆ‡ã‚Šæ›¿ãˆã‚‹ã€‚
+# - window.RULENAVI_CFGã¸ãƒ™ãƒ¼ã‚¹URLã¨ãƒšãƒ¼ã‚¸IDã‚’åŸ‹ã‚è¾¼ã¿iframeè¡¨ç¤ºã«å‚™ãˆã‚‹ã€‚
+# - f-stringã§å®ŒæˆHTMLã‚’çµ„ã¿ç«‹ã¦ã¦è¿”ã™ã€‚
 # @endif
 # @if english
 # - Build icon and navigation HTML first.
@@ -119,7 +119,7 @@ def build_page_html(
     include_tree_data: bool,
     nav_pages: List[Tuple[str, str, str]],
 ) -> str:
-    # [JP] ƒAƒCƒRƒ“•\¦—pHTML‚ÆƒiƒrƒQ[ƒVƒ‡ƒ“‚ğ¶¬ / [EN] Build icon markup and navigation HTML
+    # [JP] ã‚¢ã‚¤ã‚³ãƒ³è¡¨ç¤ºç”¨HTMLã¨ãƒŠãƒ“ã‚²ãƒ¼ã‚·ãƒ§ãƒ³ã‚’ç”Ÿæˆ / [EN] Build icon markup and navigation HTML
     icon_html = (
         f'<img class="icon-img" src="./assets/{icon_filename}" alt="icon" />'
         if has_icon
@@ -127,10 +127,10 @@ def build_page_html(
     )
     nav_html = build_nav_html(active_nav_id, nav_pages)
 
-    # [JP] ¶ƒyƒCƒ“‚ÅƒcƒŠ[‚ğg‚¤ê‡‚Ì‚İtree_data.js‚ğ’Ç‰Á / [EN] Include tree_data.js only when the left pane needs it
+    # [JP] å·¦ãƒšã‚¤ãƒ³ã§ãƒ„ãƒªãƒ¼ã‚’ä½¿ã†å ´åˆã®ã¿tree_data.jsã‚’è¿½åŠ  / [EN] Include tree_data.js only when the left pane needs it
     tree_script = '<script src="./data/tree_data.js" charset="utf-8"></script>' if include_tree_data else ""
 
-    # [JP] ‘g‚İ—§‚ÄÏ‚İƒp[ƒc‚ğƒeƒ“ƒvƒŒ[ƒg‚Ö–„‚ß‚Ş / [EN] Inject prepared parts into the HTML template
+    # [JP] çµ„ã¿ç«‹ã¦æ¸ˆã¿ãƒ‘ãƒ¼ãƒ„ã‚’ãƒ†ãƒ³ãƒ—ãƒ¬ãƒ¼ãƒˆã¸åŸ‹ã‚è¾¼ã‚€ / [EN] Inject prepared parts into the HTML template
     return f"""<!doctype html>
 <html lang=\"ja\">
 <head>
@@ -192,47 +192,47 @@ def build_page_html(
 
 
 ##
-# @brief Write text to file with logging / ƒeƒLƒXƒg‚ğƒtƒ@ƒCƒ‹‚Ö‘‚«‚İƒƒOo—Í‚·‚é
+# @brief Write text to file with logging / ãƒ†ã‚­ã‚¹ãƒˆã‚’ãƒ•ã‚¡ã‚¤ãƒ«ã¸æ›¸ãè¾¼ã¿ãƒ­ã‚°å‡ºåŠ›ã™ã‚‹
 # @if japanese
-# eƒfƒBƒŒƒNƒgƒŠ‚ğì¬‚µAUTF-8‚ÅƒeƒLƒXƒg‚ğ‘‚«‚ñ‚Å‚©‚çƒƒO‚Öo—Í‚µ‚Ü‚·B
+# è¦ªãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã‚’ä½œæˆã—ã€UTF-8ã§ãƒ†ã‚­ã‚¹ãƒˆã‚’æ›¸ãè¾¼ã‚“ã§ã‹ã‚‰ãƒ­ã‚°ã¸å‡ºåŠ›ã—ã¾ã™ã€‚
 # @endif
 #
 # @if english
 # Ensures parent directory exists, writes UTF-8 text, and logs the destination path.
 # @endif
 #
-# @param path [in]  o—ÍƒpƒX / Target path
-# @param text [in]  ‘‚«‚Ş“à—e / Text content
-# @param log [in]  LoggerƒCƒ“ƒXƒ^ƒ“ƒX / Logger instance
+# @param path [in]  å‡ºåŠ›ãƒ‘ã‚¹ / Target path
+# @param text [in]  æ›¸ãè¾¼ã‚€å†…å®¹ / Text content
+# @param log [in]  Loggerã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ / Logger instance
 
 def write_text(path: Path, text: str, log: Logger) -> None:
-    # [JP] eƒfƒBƒŒƒNƒgƒŠ‚ğ—pˆÓ‚µ‚ÄUTF-8‚Å•Û‘¶ / [EN] Ensure parent directory exists and save as UTF-8
+    # [JP] è¦ªãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªã‚’ç”¨æ„ã—ã¦UTF-8ã§ä¿å­˜ / [EN] Ensure parent directory exists and save as UTF-8
     write_text_utf8(path, text)
     log.info(f"write: {path}")
 
 
 ##
-# @brief Generate all static pages / ‘S‚Ä‚ÌÃ“Iƒy[ƒW‚ğ¶¬‚·‚é
+# @brief Generate all static pages / å…¨ã¦ã®é™çš„ãƒšãƒ¼ã‚¸ã‚’ç”Ÿæˆã™ã‚‹
 # @if japanese
-# TOP‚Ærulesƒy[ƒW‚ğ¶¬‚µAc‚è‚Ìƒy[ƒW‚ÍƒXƒ^ƒu‚Æ‚µ‚Äwrite_stub‚Åo—Í‚µ‚Ü‚·BƒAƒCƒRƒ“‚âtree_data‚Ì—L–³‚ğ”½‰f‚µA‘‚«‚İŒã‚ÉƒƒO‚ğo‚µ‚Ü‚·B
+# TOPã¨rulesãƒšãƒ¼ã‚¸ã‚’ç”Ÿæˆã—ã€æ®‹ã‚Šã®ãƒšãƒ¼ã‚¸ã¯ã‚¹ã‚¿ãƒ–ã¨ã—ã¦write_stubã§å‡ºåŠ›ã—ã¾ã™ã€‚ã‚¢ã‚¤ã‚³ãƒ³ã‚„tree_dataã®æœ‰ç„¡ã‚’åæ˜ ã—ã€æ›¸ãè¾¼ã¿å¾Œã«ãƒ­ã‚°ã‚’å‡ºã—ã¾ã™ã€‚
 # @endif
 #
 # @if english
 # Generates TOP and rules pages plus stub pages for others via write_stub, reflecting icon and tree_data availability, and logs each write.
 # @endif
 #
-# @param out_dir [in]  o—ÍƒfƒBƒŒƒNƒgƒŠ / Output directory
-# @param site_title [in]  ƒTƒCƒgƒ^ƒCƒgƒ‹ / Site title
-# @param build_base_url [in]  ƒrƒ‹ƒhƒx[ƒXURL / Build base URL
-# @param has_icon [in]  ƒAƒCƒRƒ“—L–³ / Whether icon exists
-# @param icon_filename [in]  ƒAƒCƒRƒ“ƒtƒ@ƒCƒ‹–¼ / Icon filename
-# @param nav_pages [in]  ƒiƒrƒy[ƒWƒŠƒXƒg / Navigation pages list
-# @param log [in]  LoggerƒCƒ“ƒXƒ^ƒ“ƒX / Logger instance
+# @param out_dir [in]  å‡ºåŠ›ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒª / Output directory
+# @param site_title [in]  ã‚µã‚¤ãƒˆã‚¿ã‚¤ãƒˆãƒ« / Site title
+# @param build_base_url [in]  ãƒ“ãƒ«ãƒ‰ãƒ™ãƒ¼ã‚¹URL / Build base URL
+# @param has_icon [in]  ã‚¢ã‚¤ã‚³ãƒ³æœ‰ç„¡ / Whether icon exists
+# @param icon_filename [in]  ã‚¢ã‚¤ã‚³ãƒ³ãƒ•ã‚¡ã‚¤ãƒ«å / Icon filename
+# @param nav_pages [in]  ãƒŠãƒ“ãƒšãƒ¼ã‚¸ãƒªã‚¹ãƒˆ / Navigation pages list
+# @param log [in]  Loggerã‚¤ãƒ³ã‚¹ã‚¿ãƒ³ã‚¹ / Logger instance
 # @details
 # @if japanese
-# - TOP(index.html)‚Ærules.html‚ğ“Á•Êˆ—‚µAc‚è‚Íwrite_stub‚Å‹¤’Êˆ—B
-# - write_stub‚Í¶ƒpƒlƒ‹‚ÉStubƒJ[ƒh‚ğ“ü‚êAƒy[ƒWID‚Æƒ^ƒCƒgƒ‹‚ÅHTML‚ğ¶¬B
-# - ¶¬ƒtƒ@ƒCƒ‹‚Íwrite_text‚Å‘‚«‚İAƒƒO‚ğc‚·B
+# - TOP(index.html)ã¨rules.htmlã‚’ç‰¹åˆ¥å‡¦ç†ã—ã€æ®‹ã‚Šã¯write_stubã§å…±é€šå‡¦ç†ã€‚
+# - write_stubã¯å·¦ãƒ‘ãƒãƒ«ã«Stubã‚«ãƒ¼ãƒ‰ã‚’å…¥ã‚Œã€ãƒšãƒ¼ã‚¸IDã¨ã‚¿ã‚¤ãƒˆãƒ«ã§HTMLã‚’ç”Ÿæˆã€‚
+# - ç”Ÿæˆãƒ•ã‚¡ã‚¤ãƒ«ã¯write_textã§æ›¸ãè¾¼ã¿ã€ãƒ­ã‚°ã‚’æ®‹ã™ã€‚
 # @endif
 # @if english
 # - Handles TOP(index.html) and rules.html specially; others use write_stub helper.
@@ -250,11 +250,11 @@ def write_all_pages(
     nav_pages: List[Tuple[str, str, str]],
     log: Logger,
 ) -> None:
-    # [JP] TOPƒy[ƒW—p‚Ì¶ƒyƒCƒ“HTML‚ğ’è‹` / [EN] Define left-pane HTML for TOP page
+    # [JP] TOPãƒšãƒ¼ã‚¸ç”¨ã®å·¦ãƒšã‚¤ãƒ³HTMLã‚’å®šç¾© / [EN] Define left-pane HTML for TOP page
     top_left = """
 <div class=\"stub-card\">
   <h2>TOP</h2>
-   <p>‚±‚±‚ÍTOPƒy[ƒWiƒ_ƒ~[j‚Å‚·B¡ŒãAƒ_ƒbƒVƒ…ƒ{[ƒh‚âƒVƒ‡[ƒgƒJƒbƒg‚ğ’u‚¯‚Ü‚·B</p>
+   <p>ã“ã“ã¯TOPãƒšãƒ¼ã‚¸ï¼ˆãƒ€ãƒŸãƒ¼ï¼‰ã§ã™ã€‚ä»Šå¾Œã€ãƒ€ãƒƒã‚·ãƒ¥ãƒœãƒ¼ãƒ‰ã‚„ã‚·ãƒ§ãƒ¼ãƒˆã‚«ãƒƒãƒˆã‚’ç½®ã‘ã¾ã™ã€‚</p>
 </div>
 """.strip()
     write_text(
@@ -266,8 +266,8 @@ def write_all_pages(
             build_base_url=build_base_url,
             has_icon=has_icon,
             icon_filename=icon_filename,
-            left_header_title="•ª—ŞƒcƒŠ[",
-            left_header_sub="ƒNƒŠƒbƒN‚Å–{•¶•\¦",
+            left_header_title="åˆ†é¡ãƒ„ãƒªãƒ¼",
+            left_header_sub="ã‚¯ãƒªãƒƒã‚¯ã§æœ¬æ–‡è¡¨ç¤º",
             left_body_html=top_left,
             right_breadcrumb="TOP",
             page_id_for_js="top",
@@ -277,19 +277,19 @@ def write_all_pages(
         log,
     )
 
-    # [JP] Šî€ˆê——ƒy[ƒW—p‚Ì¶ƒyƒCƒ“‚ğ€”õ / [EN] Prepare left pane for rules listing page
+    # [JP] åŸºæº–ä¸€è¦§ãƒšãƒ¼ã‚¸ç”¨ã®å·¦ãƒšã‚¤ãƒ³ã‚’æº–å‚™ / [EN] Prepare left pane for rules listing page
     rules_left = "<!-- rules tree will be rendered by app.js -->"
     write_text(
         out_dir / "rules.html",
         build_page_html(
             site_title=site_title,
-            page_title="Šî€ˆê——",
+            page_title="åŸºæº–ä¸€è¦§",
             active_nav_id="rules",
             build_base_url=build_base_url,
             has_icon=has_icon,
             icon_filename=icon_filename,
-            left_header_title="•ª—ŞƒcƒŠ[",
-            left_header_sub="ƒNƒŠƒbƒN‚Å–{•¶•\¦",
+            left_header_title="åˆ†é¡ãƒ„ãƒªãƒ¼",
+            left_header_sub="ã‚¯ãƒªãƒƒã‚¯ã§æœ¬æ–‡è¡¨ç¤º",
             left_body_html=rules_left,
             right_breadcrumb="ready",
             page_id_for_js="rules",
@@ -299,32 +299,32 @@ def write_all_pages(
         log,
     )
 
-    # [JP] ƒXƒ^ƒuƒy[ƒW‚ğ‹¤’Êˆ—‚Å¶¬ / [EN] Generate stub pages via shared helper
+    # [JP] ã‚¹ã‚¿ãƒ–ãƒšãƒ¼ã‚¸ã‚’å…±é€šå‡¦ç†ã§ç”Ÿæˆ / [EN] Generate stub pages via shared helper
     ##
-    # @brief Write stub page HTML / ƒXƒ^ƒuƒy[ƒW‚ÌHTML‚ğ‘‚­
+    # @brief Write stub page HTML / ã‚¹ã‚¿ãƒ–ãƒšãƒ¼ã‚¸ã®HTMLã‚’æ›¸ã
     #
     # @if japanese
-    # ƒ^ƒCƒgƒ‹‚©‚ç¶ƒyƒCƒ“‚ÌStubƒJ[ƒh‚ğì¬‚µApage_id‚É‰‚¶‚½ƒiƒró‘Ô‚ÅHTML‚ğ¶¬‚µ‚Ü‚·B
+    # ã‚¿ã‚¤ãƒˆãƒ«ã‹ã‚‰å·¦ãƒšã‚¤ãƒ³ã®Stubã‚«ãƒ¼ãƒ‰ã‚’ä½œæˆã—ã€page_idã«å¿œã˜ãŸãƒŠãƒ“çŠ¶æ…‹ã§HTMLã‚’ç”Ÿæˆã—ã¾ã™ã€‚
     # @endif
     #
     # @if english
     # Builds stub card HTML from the title and renders the page with the specified page_id navigation state.
     # @endif
     #
-    # @param page_id [in]  ƒy[ƒWID / Page id
-    # @param title [in]  ƒy[ƒWƒ^ƒCƒgƒ‹ / Page title
-    # @param filename [in]  o—Íƒtƒ@ƒCƒ‹–¼ / Output filename
+    # @param page_id [in]  ãƒšãƒ¼ã‚¸ID / Page id
+    # @param title [in]  ãƒšãƒ¼ã‚¸ã‚¿ã‚¤ãƒˆãƒ« / Page title
+    # @param filename [in]  å‡ºåŠ›ãƒ•ã‚¡ã‚¤ãƒ«å / Output filename
 
     def write_stub(page_id: str, title: str, filename: str) -> None:
         """
         Stub page writer for product/service/wiki/etc.
         """
-        # [JP] ¶ƒyƒCƒ“—p‚ÌStubƒJ[ƒhHTML‚ğ¶¬ / [EN] Build stub card HTML for the left pane
+        # [JP] å·¦ãƒšã‚¤ãƒ³ç”¨ã®Stubã‚«ãƒ¼ãƒ‰HTMLã‚’ç”Ÿæˆ / [EN] Build stub card HTML for the left pane
         left_html = f"""
 <div class=\"stub-card\">
   <h2>{title}</h2>
-  <p>‚±‚Ìƒy[ƒW‚Í¡ŒãÀ‘•—\’è‚Å‚·B</p>
-  <p>¶ƒyƒCƒ“‚É‚ÍƒcƒŠ[‚âƒtƒBƒ‹ƒ^“™A‰EƒyƒCƒ“‚É‚Í–{•¶/MD•\¦‚ğÚ‚¹‚é‘z’è‚Å‚·B</p>
+  <p>ã“ã®ãƒšãƒ¼ã‚¸ã¯ä»Šå¾Œå®Ÿè£…äºˆå®šã§ã™ã€‚</p>
+  <p>å·¦ãƒšã‚¤ãƒ³ã«ã¯ãƒ„ãƒªãƒ¼ã‚„ãƒ•ã‚£ãƒ«ã‚¿ç­‰ã€å³ãƒšã‚¤ãƒ³ã«ã¯æœ¬æ–‡/MDè¡¨ç¤ºã‚’è¼‰ã›ã‚‹æƒ³å®šã§ã™ã€‚</p>
 </div>
 """.strip()
         write_text(
@@ -347,8 +347,8 @@ def write_all_pages(
             log,
         )
 
-    write_stub("products", "»•i", "products.html")
-    write_stub("services", "ƒT[ƒrƒX", "services.html")
-    write_stub("search", "ŒŸõ", "search.html")
+    write_stub("products", "è£½å“", "products.html")
+    write_stub("services", "ã‚µãƒ¼ãƒ“ã‚¹", "services.html")
+    write_stub("search", "æ¤œç´¢", "search.html")
     write_stub("wiki", "wiki", "wiki.html")
     write_stub("howto", "How to", "howto.html")
