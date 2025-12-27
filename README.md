@@ -1,1 +1,160 @@
 # RuleNavi
+
+## 1. 概要
+- Excel（`resource/rules_db.xlsx`）を読み込み、SQLite（`build/rules/rules.db`）に変換。
+- DBからカテゴリーツリー/ルール情報を抽出して JSON（`build/rules/json/main_tree.json`, `main_index.json`）を生成。
+- 生成したツリーとルール本文を Markdown → HTML に変換し、左ツリー＋右本文ビューの静的サイトを `build/rules/html/` に出力。
+- すべて Windows の `cmd`/`.bat` で完結するバッチと Python スクリプトで構成。
+
+## 2. ディレクトリ構成
+```
+RuleNavi/
+├─.rulenavi_root              # ルート判定用マーカー
+├─setting.csv                 # 入出力/ファイル名などの設定
+├─resource/
+│  └─rules_db.xlsx            # 入力Excel
+├─scripts/                    # 実行ステップ本体（Python）
+│  ├─step1_p00_check_excel.py
+│  ├─step1_p01_import_excel_to_sqlite.py
+│  ├─step1_p02_check_db.py
+│  ├─step2_p00_make_directory_rules.py
+│  ├─step2_p01_dump_category_tree.py
+│  ├─step2_p02_export_tree_json.py
+│  ├─step2_p03_export_rules_index.py
+│  ├─step2_p04_export_markdown_rules.py
+│  └─step2_p05_make_site_stub.py
+├─src/                        # 共通コード（sitegen など）
+│  ├─read_setting.py / setting_helper.py / setting_key.py
+│  └─sitegen/
+│     ├─assets.py / data.py / md_html.py / pages.py / settings.py / logger.py
+├─tools/                      # `.bat` ラッパー
+│  ├─0_INIT.bat / 1_RUN_ALL.bat
+│  ├─step0_b00_sqlite_install.bat
+│  ├─step1_ALLl.bat / step2_ALLl.bat / sub_run_script.bat
+│  └─sub_step*_*.bat          # 各ステップ個別実行
+├─build/                      # 出力先（gitignore 対象）
+│  └─rules/
+│     ├─rules.db
+│     ├─file/manifest_rule_cap.tsv, .../body.md, body.html
+│     ├─json/main_tree.json, main_index.json
+│     └─html/index.html, rules.html, ... , assets/, data/tree_data.js
+└─docs/                       # 設計資料 (SystemDesign.pptx など)
+```
+
+## 3. 必要要件
+- OS: Windows（`cmd` 前提、`.bat` 利用）。
+- Python: 3.x（`py` コマンドで起動できること、標準の `sqlite3` を使用）。
+- Pythonパッケージ: `pandas`, `openpyxl`（Excel 読み込みで使用）。requirements.txt は無いため必要に応じて手動インストール。
+- 文字コード: `setting.csv` は UTF-8 (BOM) 前提。Excel/Markdown も UTF-8 を推奨。
+- 推奨ツール: VS Code 等のエディタ。`PYTHONPATH` を `src` に通す設定だと補完が効きやすい。
+
+## 4. 初回セットアップ手順
+1. リポジトリ直下（`.rulenavi_root` がある場所）で `cmd` を開く。
+2. 依存インストール  
+   - 付属の `tools/step0_b00_sqlite_install.bat` は `py -m pip install pandas openpyxl` を実行する簡易スクリプト（パスが固定 `C:\Workplace\RuleDB\system\rules` なので必要に応じて編集）。  
+   - 直接インストールする場合:
+     ```cmd
+     py -m pip install pandas openpyxl
+     ```
+3. 生成物/キャッシュを削除（初回や再生成前に推奨）:
+   ```cmd
+   tools\0_INIT.bat
+   ```
+   `build`, `__pycache__`, `*.pyc`, `*.log` などを削除する。
+4. `resource\rules_db.xlsx` が最新であることを確認。
+
+## 5. 設定（setting.csv）
+- 形式: `key,value,type,remark` の4列。`setting_key.py` にキー定数、`setting_helper.py` にパス生成関数、`read_setting.py` に CSV 読み込みロジックがある。
+- 主なキーと既定値:
+  - 入力: `RESRC_DIR=resource`, `DB_SRC_EXCEL=rules_db.xlsx`
+  - 出力ルート: `BUILD_DIR=build`, `RULES_DIR=rules`, `RULES_FILE_DIR=file`
+  - DB/JSON/HTML 名: `DB_NAME=rules.db`, `JSON_DIR=json`, `JSON_MAIN_TREE=main_tree.json`, `JSON_MAIN_INDEX=main_index.json`, `HTML_DIR=html`
+  - Markdown/TSV: `MD_RULE_FILENAME=body.md`, `MD_BODY_FILENAME=body.md`, `TSV_MANIFEST_RULE_CAP=manifest_rule_cap.tsv`
+  - サイト表示: `SITE_TITLE=RuleNavi` ほか（アイコン名は `settings.py` で `SITE_ICON_FILE` にフォールバック）
+- 例: 出力先を `build_dev` に変える場合は `BUILD_DIR` を書き換える。入力 Excel を別フォルダに置く場合は `RESRC_DIR` や `DB_SRC_EXCEL` を変更。
+- `read_setting.load_setting_csv()` は CWD を優先し、なければ `src` から親を探索するため、実行時は必ずリポジトリ直下をカレントにする。
+
+## 6. 実行方法（コピペで動く例）
+> すべてリポジトリ直下で `cmd` から実行。`.bat` 内で `PYTHONPATH=src` を設定。
+
+- 生成物/キャッシュ削除:  
+  `tools\0_INIT.bat`
+
+- STEP1+STEP2 をまとめて実行（最短ルート）:  
+  ```cmd
+  tools\1_RUN_ALL.bat
+  ```
+
+- STEP1 のみ（Excel → SQLite → 簡易チェック）:  
+  ```cmd
+  tools\step1_ALLl.bat
+  ```
+
+- STEP2 系（DB→JSON/MD/HTML）。`tools\step2_ALLl.bat` は任意スクリプト実行ラッパーなので、順番に個別 `.bat` を叩くのが確実:  
+  ```cmd
+  tools\sub_step2_p00_make_directory_rules.bat
+  tools\sub_step2_p01_dump_category_tree.bat
+  tools\sub_step2_p02_export_tree_json.bat
+  tools\sub_step2_p03_export_rules_index.bat
+  tools\sub_step2_p04_export_markdown_rules.bat
+  tools\sub_step2_p05_make_site_stub.bat
+  ```
+  まとめて1本で実行したい場合は、任意スクリプトを指定するラッパを利用（例: サイト生成だけ静かに走らせる）:
+  ```cmd
+  tools\step2_ALLl.bat step2_p05_make_site_stub.py --quiet
+  ```
+
+- 任意のスクリプトを引数付きで実行:  
+  ```cmd
+  tools\sub_run_script.bat step2_p01_dump_category_tree.py --out build\log\cat_tree.txt --log-level DEBUG
+  ```
+
+## 7. 生成物の説明
+- `build/rules/rules.db` … STEP1 で生成される SQLite。`setting.csv` の `TBL_*` / `ITM_*` で定義したテーブル/列を持つ。
+- `build/rules/file/manifest_rule_cap.tsv` … STEP2-1（ディレクトリ生成）で出力されるルール→フォルダ対応表。後続のインデックス/Markdown生成で参照。
+- `build/rules/file/<type>/<major>/<sub>/<id_rule>/[<id_cap>/]body.md` … STEP2-5 でルール本文/章を Markdown 化したもの。`body.html` は同ディレクトリに生成され、ビューアが iframe で表示する。
+- `build/rules/json/main_tree.json` … 左ツリー用の階層 JSON（Type→Major→Sub→Rule→Chapter）。
+- `build/rules/json/main_index.json` … ルール一覧/検索用のフラット JSON（`md_path`, `state`, `type/major/sub` ラベルなどを含む）。
+- `build/rules/html/` … 静的サイト一式。`index.html`（TOPスタブ）、`rules.html`（ツリービュー本体）、`products.html`/`services.html`/`search.html`/`wiki.html`/`howto.html`（スタブページ）、`assets/app.js`・`assets/site.css`・`data/tree_data.js` など。
+- `build/rules/html/assets/app.js` … ツリー描画や iframe ローダー。`data/tree_data.js` に埋め込まれたツリーを使うため `file://` でも動作。
+- `docs/*.pptx` … 企画/設計資料。
+
+## 8. 使い方（ブラウザでの閲覧）
+- 生成後、`build\rules\html\index.html` をダブルクリックまたはブラウザで開く。TOP はスタブ、実質的なビューは `rules.html`（左ツリー＋右 iframe）。
+- クリックしたノードに対応する `body.html` を iframe で読み込む。`data/tree_data.js` が欠けているとツリーが空になるので、必ず STEP2 を完了させる。
+- `file://` 直開きで問題ない構成だが、もしブラウザで `TypeError: Failed to fetch` 等が出る場合は `build/rules/html` で簡易サーバーを立てると確実:
+  ```cmd
+  cd build\rules\html
+  py -m http.server 8000
+  ```
+  その上で `http://localhost:8000/rules.html` を開く。
+
+## 9. トラブルシューティング
+- `setting.csv not found` / `.rulenavi_root` を見失う:  
+  `.bat` 実行前に必ずリポジトリ直下へ `cd`。`read_setting.load_setting_csv()` は CWD を優先する。
+- `tree.json not found`（`build/rules/json/main_tree.json` が無い）:  
+  STEP1（DB生成）→ STEP2（`step2_p00`～`p02`）の順で再実行。`rules.db` が無い状態で STEP2 に進むと生成されない。
+- `TypeError: Failed to fetch` や本文が出ない:  
+  `data/tree_data.js` または `body.html` が無い/パスずれ。STEP2-5 まで完走するか、`build/rules/html` をルートにローカルサーバーを立てて確認する。
+- `ModuleNotFoundError: read_setting` など PYTHONPATH 問題:  
+  `.bat` 以外で直接 `py scripts\*.py` を叩く場合は事前に `set PYTHONPATH=%cd%\src` を設定。
+- `pandas` / `openpyxl` が無い:  
+  `py -m pip install pandas openpyxl` を実行（管理者権限不要のユーザー環境でも可）。
+- Excel/DB パスが見つからない:  
+  `setting.csv` の `RESRC_DIR`・`DB_SRC_EXCEL`・`DB_NAME` の値と実ファイルの場所を確認。相対パスはリポジトリ直下基準。
+
+## 10. 開発ガイド
+- ステップスクリプト命名: `stepN_pXX_*`（N=フェーズ、pXX=順序）。STEP1=Excel→SQLite、STEP2=DB→ファイル出力。
+- `sitegen` モジュール役割:
+  - `settings.py`: build先/リソースパス解決、サイトタイトル・アイコン名解決。
+  - `data.py`: `tree.json` の読込、Markdown 探索と HTML 変換、`tree_data.js` 生成。
+  - `assets.py`: 共通 CSS/JS を生成、アイコンを `assets/` にコピー。
+  - `pages.py`: 各 HTML ページ（`rules.html` ほか）を組み立て。
+  - `md_html.py`: Markdown の簡易パーサー→body.html 生成。
+  - `logger.py`: シンプルなログ出力。
+- `build/` 配下は `.gitignore` 済みのため、生成物はコミット不要（必要なら別途成果物として共有）。
+- 新しい列/テーブルを追加する場合は `setting_key.py` に定数追加 → `setting.csv` にキーを追加 → 参照するスクリプトで取得。
+
+## 11. 注意事項
+- 本リポジトリは社内ドキュメント/データを扱う想定。`resource/rules_db.xlsx` や生成物の持ち出し・外部公開はポリシーに従うこと。
+- `.bat` は削除系（`0_INIT.bat`）も含むため、パスを変更する場合は内容を確認してから実行する。
