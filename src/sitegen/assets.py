@@ -20,6 +20,7 @@ import shutil  # [JP] 標準: ファイルコピー / [EN] Standard: file copyin
 from pathlib import Path  # [JP] 標準: パス操作 / [EN] Standard: path utilities
 
 from sitegen.logger import Logger  # [JP] 自作: ログ出力 / [EN] Local: logger utility
+from textio import write_text_utf8  # [JP] 自作: UTF-8書き込みヘルパ / [EN] Local: UTF-8 write helper
 
 
 ##
@@ -35,8 +36,8 @@ from sitegen.logger import Logger  # [JP] 自作: ログ出力 / [EN] Local: log
 #
 # @return str  CSS文字列 / CSS content
 def build_site_css() -> str:
-    # 共通CSSはここで固定文字列として返す
-    return r"""
+    # 共通CSSはここで固定文字列として返す（先頭に@charsetを明示）
+    css_body = r"""
 :root{
   --bg:#0f1115;
   --panel:#141823;
@@ -249,7 +250,8 @@ body{
   .search{min-width:160px;}
   .nav{display:none;}
 }
-""".lstrip()
+""".lstrip("\n")
+    return '@charset "utf-8";\n' + css_body
 
 
 ##
@@ -629,10 +631,10 @@ def write_assets(assets_dir: Path, log: Logger) -> None:
     css = build_site_css()
     js = build_app_js()
 
-    (assets_dir / "site.css").write_text(css, encoding="utf-8")
+    write_text_utf8(assets_dir / "site.css", css)
     log.info(f"write: {assets_dir / 'site.css'}")
 
-    (assets_dir / "app.js").write_text(js, encoding="utf-8")
+    write_text_utf8(assets_dir / "app.js", js)
     log.info(f"write: {assets_dir / 'app.js'}")
 
 

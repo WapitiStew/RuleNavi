@@ -1,14 +1,41 @@
 # -*- coding: utf-8 -*-
+##
+# @file src/sitegen/page_builders/page_top.py
+# @brief Generate TOP page HTML.
+#
+# @if japanese
+# TOPƒy[ƒW‚ÌƒXƒ^ƒuHTML‚ğ¶¬‚µAindex.html‚Æ‚µ‚Ä‘‚«o‚µ‚Ü‚·B
+# ¶ƒyƒCƒ“‚ÉŠÈˆÕƒJ[ƒh‚ğ”z’u‚µAƒcƒŠ[•\¦‚ÍŠÜ‚ß‚Ü‚¹‚ñB
+# @endif
+#
+# @if english
+# Generates the TOP page stub HTML and writes it as index.html.
+# Places a simple card on the left pane and does not include the tree view.
+# @endif
+#
 from __future__ import annotations
 
 from sitegen.page_builders.common import SiteContext, build_page_html, write_text
 
 
+##
+# @brief Write TOP page / TOPƒy[ƒW‚ğ‘‚«o‚·
+#
+# @if japanese
+# ƒXƒ^ƒu—pƒƒbƒZ[ƒW‚ğ¶ƒyƒCƒ“‚É”z’u‚µATOPƒy[ƒW‚Æ‚µ‚Äindex.html‚Ö•Û‘¶‚µ‚Ü‚·B
+# @endif
+#
+# @if english
+# Builds a stub message for the left pane and saves it as index.html for the TOP page.
+# @endif
+#
+# @param ctx [in]  ƒTƒCƒgƒRƒ“ƒeƒLƒXƒg / Site context
+
 def write(ctx: SiteContext) -> None:
     left_html = """
 <div class="stub-card">
   <h2>TOP</h2>
-  <p>ã“ã“ã¯TOPãƒšãƒ¼ã‚¸ï¼ˆãƒ€ãƒŸãƒ¼ï¼‰ã§ã™ã€‚ä»Šå¾Œã€ãƒ€ãƒƒã‚·ãƒ¥ãƒœãƒ¼ãƒ‰ã‚„ã‚·ãƒ§ãƒ¼ãƒˆã‚«ãƒƒãƒˆã‚’ç½®ã‘ã¾ã™ã€‚</p>
+  <p>‚±‚±‚ÍTOPƒy[ƒWiƒ_ƒ~[j‚Å‚·B¡ŒãAƒ_ƒbƒVƒ…ƒ{[ƒh‚âƒVƒ‡[ƒgƒJƒbƒg‚ğ’u‚¯‚Ü‚·B</p>
 </div>
 """.strip()
 
@@ -19,13 +46,12 @@ def write(ctx: SiteContext) -> None:
         build_base_url=ctx.build_base_url,
         has_icon=ctx.has_icon,
         icon_filename=ctx.icon_filename,
-        left_header_title="åˆ†é¡ãƒ„ãƒªãƒ¼",
-        left_header_sub="ã‚¯ãƒªãƒƒã‚¯ã§æœ¬æ–‡è¡¨ç¤º",
+        left_header_title="•ª—ŞƒcƒŠ[",
+        left_header_sub="ƒNƒŠƒbƒN‚Å–{•¶•\¦",
         left_body_html=left_html,
         right_breadcrumb="TOP",
         page_id_for_js="top",
         include_tree_data=False,
         nav_pages=ctx.nav_pages,
-        # å°†æ¥: cfg_extra={"stubMode": True} ãªã©ã‚’å…¥ã‚Œã¦ã„ãæƒ³å®š
     )
     write_text(ctx.out_dir / "index.html", html, ctx.log)

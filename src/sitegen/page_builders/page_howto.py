@@ -1,15 +1,40 @@
 # -*- coding: utf-8 -*-
+##
+# @file src/sitegen/page_builders/page_howto.py
+# @brief Generate how-to page HTML stub.
+#
+# @if japanese
+# How toƒy[ƒW(howto.html)‚ÌƒXƒ^ƒuHTML‚ð¶¬‚µ‚Ü‚·B¶ƒyƒCƒ“‚ÉStubƒJ[ƒh‚ð”z’u‚µAƒcƒŠ[‚Í“Ç‚Ýž‚Ý‚Ü‚¹‚ñB
+# @endif
+#
+# @if english
+# Generates a stub how-to page (howto.html) with a stub card on the left pane and no tree data.
+# @endif
+#
 from __future__ import annotations
 
 from sitegen.page_builders.common import SiteContext, build_page_html, stub_left_html, write_text
 
 
+##
+# @brief Write how-to page / How toƒy[ƒW‚ð‘‚«o‚·
+#
+# @if japanese
+# How toƒy[ƒW‚ÌƒXƒ^ƒu‚ð¶¬‚µA¶ƒyƒCƒ“‚ÉStubƒJ[ƒh‚ð•\Ž¦‚µ‚Ähowto.html‚Ö•Û‘¶‚µ‚Ü‚·B
+# @endif
+#
+# @if english
+# Builds the how-to page stub, shows a stub card on the left pane, and saves to howto.html.
+# @endif
+#
+# @param ctx [in]  ƒTƒCƒgƒRƒ“ƒeƒLƒXƒg / Site context
+
 def write(ctx: SiteContext) -> None:
-    title = "è£½å“"
+    title = "How to"
     html = build_page_html(
         site_title=ctx.site_title,
         page_title=title,
-        active_nav_id="products",
+        active_nav_id="howto",
         build_base_url=ctx.build_base_url,
         has_icon=ctx.has_icon,
         icon_filename=ctx.icon_filename,
@@ -17,8 +42,8 @@ def write(ctx: SiteContext) -> None:
         left_header_sub="Coming soon",
         left_body_html=stub_left_html(title),
         right_breadcrumb=title,
-        page_id_for_js="products",
+        page_id_for_js="howto",
         include_tree_data=False,
         nav_pages=ctx.nav_pages,
     )
-    write_text(ctx.out_dir / "products.html", html, ctx.log)
+    write_text(ctx.out_dir / "howto.html", html, ctx.log)

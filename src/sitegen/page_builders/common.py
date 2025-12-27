@@ -3,20 +3,45 @@
 # @file src/sitegen/page_builders/common.py
 # @brief Common helpers for per-page HTML generation.
 #
+# @if japanese
+# ƒy[ƒW¶¬‚Å‹¤—L‚·‚éƒiƒrHTML‘g‚İ—§‚Ä‚âİ’è–„‚ß‚İ‚ğ’ñ‹Ÿ‚µ‚Ü‚·B
+# “ü—Í: ƒTƒCƒgƒ^ƒCƒgƒ‹‚âƒx[ƒXURLA¶/‰EƒyƒCƒ“HTMLAƒcƒŠ[“Ç‚İ‚İ—L–³‚È‚ÇB
+# o—Í: Š®¬‚µ‚½HTML•¶š—ñ‚Ü‚½‚Í‘‚«‚İŒ‹‰Ê‚ÌƒƒO‚Ì‚İ‚ÅAƒƒWƒbƒN‚âƒf[ƒ^‚Í•ÏX‚µ‚Ü‚¹‚ñB
+# ’ˆÓ: ‚±‚±‚Å‚Í•\¦—pƒeƒLƒXƒg‚ğ‚»‚Ì‚Ü‚Ü–„‚ß‚Ş‚½‚ßAŒÄ‚Ño‚µ‘¤‚ÅƒGƒXƒP[ƒvÏ‚İ‚Å‚ ‚é‚±‚Æ‚ª‘O’ñ‚Å‚·B
+# @endif
+#
+# @if english
+# Provides shared helpers for building navigation and page HTML fragments.
+# Input: site title, base URL, left/right pane HTML, tree-data flag, and context metadata.
+# Output: full HTML strings or write operations only; no business logic or data is modified here.
+# Note: Callers must pre-escape any HTML snippets because they are injected verbatim.
+# @endif
+#
 from __future__ import annotations
 
-import json
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+import json  # [JP] •W€: JSONƒVƒŠƒAƒ‰ƒCƒY / [EN] Standard: JSON serialization
+from dataclasses import dataclass  # [JP] •W€: dataclass’è‹` / [EN] Standard: dataclass definition
+from pathlib import Path  # [JP] •W€: ƒpƒX‘€ì / [EN] Standard: path utilities
+from typing import Dict, List, Optional, Tuple  # [JP] •W€: Œ^ƒqƒ“ƒg / [EN] Standard: type hints
 
-from sitegen.logger import Logger
+from sitegen.logger import Logger  # [JP] ©ì: ƒƒK[ / [EN] Local: logger utility
+from textio import write_text_utf8  # [JP] ©ì: UTF-8‘‚«‚İƒwƒ‹ƒp / [EN] Local: UTF-8 write helper
 
-
+# [JP] ƒiƒrƒQ[ƒVƒ‡ƒ“ƒ^ƒvƒ‹Œ^ (id, label, href) / [EN] Navigation tuple type (id, label, href)
 NavPages = List[Tuple[str, str, str]]
 
 
 @dataclass(frozen=True)
+##
+# @brief Shared context for page writers / ƒy[ƒWwriter‹¤’Ê‚ÌƒRƒ“ƒeƒLƒXƒg
+#
+# @if japanese
+# ƒy[ƒW¶¬‚É•K—v‚Èo—ÍƒfƒBƒŒƒNƒgƒŠAƒ^ƒCƒgƒ‹Aƒx[ƒXURLAƒAƒCƒRƒ“î•ñAƒiƒrƒy[ƒWAƒƒK[‚ğ•Û‚µ‚Ü‚·B
+# @endif
+#
+# @if english
+# Holds output directory, titles, base URL, icon info, navigation pages, and logger required by page writers.
+# @endif
 class SiteContext:
     """
     Shared context for page writers.
@@ -30,13 +55,73 @@ class SiteContext:
     log: Logger
 
 
+##
+# @brief Build navigation HTML tabs / ƒiƒrƒQ[ƒVƒ‡ƒ“‚Ìƒ^ƒuHTML‚ğ¶¬‚·‚é
+#
+# @if japanese
+# nav_pages‚Ì’è‹`‚ğŠî‚Éƒ^ƒuƒŠƒ“ƒN‚ğ¶¬‚µAactive_id‚Éˆê’v‚·‚éƒ^ƒu‚Öis-activeƒNƒ‰ƒX‚ğ•t—^‚µ‚Ü‚·B
+# @endif
+#
+# @if english
+# Generates navigation tab links from nav_pages and adds the is-active class to the matching active_id.
+# @endif
+#
+# @param active_id [in]  ƒAƒNƒeƒBƒu‚Èƒ^ƒuID / Active tab id
+# @param nav_pages [in]  (id,label,href)‚ÌƒŠƒXƒg / List of (id, label, href)
+# @return str  ¶¬‚µ‚½HTML•¶š—ñ / Generated HTML string
+
 def build_nav_html(active_id: str, nav_pages: NavPages) -> str:
     parts: List[str] = []
+    # [JP] ƒ^ƒu’PˆÊ‚ÅƒŠƒ“ƒN‚ğ‘g‚İ—§‚ÄƒAƒNƒeƒBƒuó‘Ô‚ğ•t—^ / [EN] Build each tab link and mark active state
     for pid, label, href in nav_pages:
         cls = "tab is-active" if pid == active_id else "tab"
         parts.append(f'<a class="{cls}" href="./{href}" data-nav="{pid}">{label}</a>')
     return "\n".join(parts)
 
+
+##
+# @brief Build a full HTML page / ’Pˆêƒy[ƒW‚ÌHTML‘S•¶‚ğ‘g‚İ—§‚Ä‚é
+#
+# @if japanese
+# ƒTƒCƒgƒ^ƒCƒgƒ‹‚âƒx[ƒXURLA¶‰Eƒpƒlƒ‹‚ÌHTML‚È‚Ç‚ğó‚¯æ‚èAwindow.RULENAVI_CFG‚ğŠÜ‚ŞŠ®‘S‚ÈHTML‚ğ•Ô‚µ‚Ü‚·B
+# tree_data.js‚â’Ç‰ÁƒXƒNƒŠƒvƒg‚Ì“Ç‚İ‚İ—L–³‚ğØ‚è‘Ö‚¦‚ç‚ê‚Ü‚·B
+# @endif
+#
+# @if english
+# Assembles a full HTML document using site title, base URL, left/right body HTML, and embeds window.RULENAVI_CFG.
+# Allows toggling tree_data.js and extra scripts/styles inclusion.
+# @endif
+#
+# @param site_title [in]  ƒTƒCƒgƒ^ƒCƒgƒ‹ / Site title
+# @param page_title [in]  ƒy[ƒWƒ^ƒCƒgƒ‹ / Page title
+# @param active_nav_id [in]  ƒAƒNƒeƒBƒuƒ^ƒuID / Active nav id
+# @param build_base_url [in]  ƒrƒ‹ƒhƒx[ƒXURL / Build base URL
+# @param has_icon [in]  ƒAƒCƒRƒ“—L–³ / Whether icon exists
+# @param icon_filename [in]  ƒAƒCƒRƒ“ƒtƒ@ƒCƒ‹–¼ / Icon filename
+# @param left_header_title [in]  ¶ƒwƒbƒ_Œ©o‚µ / Left header title
+# @param left_header_sub [in]  ¶ƒwƒbƒ_ƒTƒuƒ^ƒCƒgƒ‹ / Left header subtitle
+# @param left_body_html [in]  ¶ƒyƒCƒ“–{•¶HTML / Left pane body HTML
+# @param right_breadcrumb [in]  ‰Eƒpƒ“‚­‚¸ / Right breadcrumb text
+# @param page_id_for_js [in]  JS—pƒy[ƒWID / Page id for JS config
+# @param include_tree_data [in]  tree_data.js“Ç‚Ì—L–³ / Whether to include tree_data.js
+# @param nav_pages [in]  ƒiƒrƒQ[ƒVƒ‡ƒ“ƒŠƒXƒg / Navigation list
+# @param cfg_extra [in]  RULENAVI_CFG‚Ö’Ç‰Á‚·‚é«‘ / Extra config for RULENAVI_CFG
+# @param extra_head_html [in]  head‚Ö‘}“ü‚·‚é’Ç‰ÁHTML / Extra HTML to inject into head
+# @param extra_body_scripts [in]  bodyI’[‚Ö’Ç‰Á‚·‚éscriptƒpƒX / Extra scripts appended after app.js
+# @return str  Š®¬‚µ‚½HTML•¶š—ñ / Completed HTML string
+# @details
+# @if japanese
+# - ƒAƒCƒRƒ“•\¦HTML‚ÆƒiƒrHTML‚ğ‘g‚İ—§‚Ä‚éB
+# - cfg_extra‚ª‚ ‚ê‚Îwindow.RULENAVI_CFG‚Éƒ}[ƒW‚·‚éB
+# - tree_data.js‚Æ’Ç‰ÁƒXƒNƒŠƒvƒg‚Ì“Ç‚İ‚İ‚ğƒtƒ‰ƒO‚ÅØ‚è‘Ö‚¦‚éB
+# - ƒeƒ“ƒvƒŒ[ƒg‚É‘Sƒf[ƒ^‚ğ–„‚ß‚İ•¶š—ñ‚Æ‚µ‚Ä•Ô‚·B
+# @endif
+# @if english
+# - Build icon and navigation HTML first.
+# - Merge cfg_extra into window.RULENAVI_CFG when provided.
+# - Toggle tree_data.js and extra scripts via flags.
+# - Embed all pieces into the template and return the HTML string.
+# @endif
 
 def build_page_html(
     *,
@@ -59,17 +144,16 @@ def build_page_html(
 ) -> str:
     """
     Assemble a complete HTML page.
-    - cfg_extra: window.RULENAVI_CFG ã«è¿½åŠ ã—ãŸã„ã‚­ãƒ¼ï¼ˆå°†æ¥ãƒšãƒ¼ã‚¸å€‹åˆ¥JSç”¨ï¼‰
-    - extra_head_html: head ã«å·®ã—è¾¼ã‚€ï¼ˆãƒšãƒ¼ã‚¸å›ºæœ‰CSSãªã©ï¼‰
-    - extra_body_scripts: app.js ã®å¾Œã«èª­ã¿ãŸã„ãƒšãƒ¼ã‚¸å›ºæœ‰JSãªã©
     """
+    # [JP] ƒAƒCƒRƒ“•\¦‚ÆƒiƒrHTML‚ğ‘g‚İ—§‚Ä / [EN] Build icon markup and navigation HTML
     icon_html = (
         f'<img class="icon-img" src="./assets/{icon_filename}" alt="icon" />'
         if has_icon
-        else '<div class="icon-emoji">ğŸ¦Œ</div>'
+        else '<div class="icon-emoji">??</div>'
     )
     nav_html = build_nav_html(active_nav_id, nav_pages)
 
+    # [JP] RULENAVI_CFG‚ğ‰Šú‰»‚µ•K—v‚È‚ç’Ç‰Áî•ñ‚ğƒ}[ƒW / [EN] Initialize RULENAVI_CFG and merge extras if any
     cfg = {
         "buildBaseUrl": str(build_base_url),
         "pageId": str(page_id_for_js),
@@ -77,18 +161,20 @@ def build_page_html(
     if cfg_extra:
         cfg.update(cfg_extra)
 
-    tree_script = '<script src="./data/tree_data.js"></script>' if include_tree_data else ""
+    # [JP] tree_data.js‚â’Ç‰ÁƒXƒNƒŠƒvƒg‚Ì“Ç‚İ‚İƒ^ƒO‚ğ€”õ / [EN] Prepare script tags for tree data and extra scripts
+    tree_script = '<script src="./data/tree_data.js" charset="utf-8"></script>' if include_tree_data else ""
     extra_scripts_html = ""
     if extra_body_scripts:
-        extra_scripts_html = "\n".join([f'<script src="{s}"></script>' for s in extra_body_scripts])
+        extra_scripts_html = "\n".join([f'<script src="{s}" charset="utf-8"></script>' for s in extra_body_scripts])
 
+    # [JP] –„‚ß‚İİ’è‚Æ–{•¶‚ğƒeƒ“ƒvƒŒ[ƒg‚Ö”½‰f / [EN] Embed configuration and bodies into the template
     return f"""<!doctype html>
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{page_title} - {site_title}</title>
-  <link rel="stylesheet" href="./assets/site.css" />
+  <link rel="stylesheet" href="./assets/site.css" charset="utf-8" />
   {extra_head_html}
 </head>
 <body>
@@ -104,7 +190,7 @@ def build_page_html(
     </div>
     <div></div>
     <div class="search">
-      <div>ğŸ”</div>
+      <div>??</div>
       <input id="q" type="search" placeholder="search (tree filter / page filter)" />
     </div>
   </header>
@@ -134,24 +220,54 @@ def build_page_html(
     window.RULENAVI_CFG = {json.dumps(cfg, ensure_ascii=False)};
   </script>
   {tree_script}
-  <script src="./assets/app.js"></script>
+  <script src="./assets/app.js" charset="utf-8"></script>
   {extra_scripts_html}
 </body>
 </html>
 """
 
 
+##
+# @brief Write text file with logging / ƒeƒLƒXƒgƒtƒ@ƒCƒ‹‚ğ‘‚«‚İƒƒOo—Í‚·‚é
+#
+# @if japanese
+# eƒfƒBƒŒƒNƒgƒŠ‚ğ—pˆÓ‚µ‚ÄUTF-8‚Å‘‚«‚İAƒpƒX‚ğƒƒO‚Éc‚µ‚Ü‚·B
+# @endif
+#
+# @if english
+# Ensures the parent directory exists, writes UTF-8 text, and logs the destination path.
+# @endif
+#
+# @param path [in]  o—ÍƒpƒX / Output path
+# @param text [in]  ‘‚«‚Ş“à—e / Text content
+# @param log [in]  LoggerƒCƒ“ƒXƒ^ƒ“ƒX / Logger instance
+
 def write_text(path: Path, text: str, log: Logger) -> None:
+    # [JP] ƒfƒBƒŒƒNƒgƒŠì¬Œã‚ÉUTF-8‚Å•Û‘¶ / [EN] Create directories then save as UTF-8
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8")
+    write_text_utf8(path, text)
     log.info(f"write: {path}")
 
+
+##
+# @brief Build stub left-pane HTML / ƒXƒ^ƒu¶ƒyƒCƒ“‚ÌHTML‚ğ¶¬‚·‚é
+#
+# @if japanese
+# –¢À‘•ƒy[ƒWŒü‚¯‚ÌStubƒJ[ƒhHTML‚ğ•Ô‚µ‚Ü‚·B•¶Œ¾‚ÍŒ³À‘•‚Ì‚Ü‚Ü•Û‚µ‚Ü‚·B
+# @endif
+#
+# @if english
+# Returns stub-card HTML for yet-to-be-implemented pages, preserving the original wording.
+# @endif
+#
+# @param title [in]  Œ©o‚µƒ^ƒCƒgƒ‹ / Heading title
+# @return str  ¶ƒyƒCƒ“—pHTML / Left-pane HTML
 
 def stub_left_html(title: str) -> str:
     return f"""
 <div class="stub-card">
   <h2>{title}</h2>
-  <p>ã“ã®ãƒšãƒ¼ã‚¸ã¯ä»Šå¾Œå®Ÿè£…äºˆå®šã§ã™ã€‚</p>
-  <p>å·¦ãƒšã‚¤ãƒ³ã«ã¯ãƒ„ãƒªãƒ¼ã‚„ãƒ•ã‚£ãƒ«ã‚¿ç­‰ã€å³ãƒšã‚¤ãƒ³ã«ã¯æœ¬æ–‡/MDè¡¨ç¤ºã‚’è¼‰ã›ã‚‹æƒ³å®šã§ã™ã€‚</p>
+  <p>‚±‚Ìƒy[ƒW‚Í¡ŒãÀ‘•—\’è‚Å‚·B</p>
+  <p>¶ƒyƒCƒ“‚É‚ÍƒcƒŠ[‚âƒtƒBƒ‹ƒ^“™A‰EƒyƒCƒ“‚É‚Í–{•¶/MD•\¦‚ğÚ‚¹‚é‘z’è‚Å‚·B</p>
 </div>
 """.strip()

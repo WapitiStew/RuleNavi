@@ -1,21 +1,46 @@
 # -*- coding: utf-8 -*-
+##
+# @file src/sitegen/page_builders/page_rules.py
+# @brief Generate rules listing page HTML.
+#
+# @if japanese
+# ƒ‹[ƒ‹ˆê——ƒy[ƒW(rules.html)‚ÌHTML‚ð¶¬‚µ‚Ü‚·B¶ƒyƒCƒ“‚É‚ÍƒcƒŠ[•\Ž¦‚ÌƒvƒŒ[ƒXƒzƒ‹ƒ_‚ð”z’u‚µAtree_data.js‚ð“Ç‚Ýž‚Ý‚Ü‚·B
+# @endif
+#
+# @if english
+# Generates the rules listing page (rules.html). Places a placeholder for the tree view on the left pane and loads tree_data.js.
+# @endif
+#
 from __future__ import annotations
 
 from sitegen.page_builders.common import SiteContext, build_page_html, write_text
 
+
+##
+# @brief Write rules page / ƒ‹[ƒ‹ˆê——ƒy[ƒW‚ð‘‚«o‚·
+#
+# @if japanese
+# rules.html‚ð¶¬‚µA¶ƒyƒCƒ“‚ÉƒcƒŠ[•`‰æ—p‚ÌƒvƒŒ[ƒXƒzƒ‹ƒ_‚ð”z’u‚µ‚Ü‚·B
+# @endif
+#
+# @if english
+# Writes rules.html and places a placeholder for the tree rendering on the left pane.
+# @endif
+#
+# @param ctx [in]  ƒTƒCƒgƒRƒ“ƒeƒLƒXƒg / Site context
 
 def write(ctx: SiteContext) -> None:
     rules_left = "<!-- rules tree will be rendered by app.js -->"
 
     html = build_page_html(
         site_title=ctx.site_title,
-        page_title="åŸºæº–ä¸€è¦§",
+        page_title="Šî€ˆê——",
         active_nav_id="rules",
         build_base_url=ctx.build_base_url,
         has_icon=ctx.has_icon,
         icon_filename=ctx.icon_filename,
-        left_header_title="åˆ†é¡žãƒ„ãƒªãƒ¼",
-        left_header_sub="ã‚¯ãƒªãƒƒã‚¯ã§æœ¬æ–‡è¡¨ç¤º",
+        left_header_title="•ª—ÞƒcƒŠ[",
+        left_header_sub="ƒNƒŠƒbƒN‚Å–{•¶•\Ž¦",
         left_body_html=rules_left,
         right_breadcrumb="ready",
         page_id_for_js="rules",

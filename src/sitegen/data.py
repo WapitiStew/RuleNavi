@@ -22,6 +22,7 @@ from typing import Any, Dict, Iterable, List, Tuple  # [JP] 標準: 型ヒント
 
 from sitegen.logger import Logger  # [JP] 自作: ログ出力 / [EN] Local: logger
 from sitegen.md_html import md_to_html, wrap_body_html  # [JP] 自作: MD->HTML変換 / [EN] Local: Markdown conversion
+from textio import read_text_auto, write_text_utf8  # [JP] 自作: エンコーディング統一I/O / [EN] Local: encoding-safe I/O helpers
 
 
 ##
@@ -41,7 +42,7 @@ from sitegen.md_html import md_to_html, wrap_body_html  # [JP] 自作: MD->HTML�
 # @throws ValueError ルートが配列でない場合 / If root is not a list
 def load_tree_json(path: Path, log: Logger) -> List[Dict[str, Any]]:
     log.info(f"read: {path}")
-    data = json.loads(path.read_text(encoding="utf-8"))
+    data = json.loads(read_text_auto(path))
     if not isinstance(data, list):
         raise ValueError("tree.json must be a JSON array at root.")
     return data
@@ -152,17 +153,14 @@ def convert_md_targets_to_html(
         rel_dir = str(node.get("path") or "")
         log.debug(f"convert[{i}/{total}]: {label} ({rel_dir}) -> {md_path}")
 
-        try:
-            md_text = md_path.read_text(encoding="utf-8")
-        except UnicodeDecodeError:
-            md_text = md_path.read_text(encoding="cp932")
+        md_text = read_text_auto(md_path)
 
         body = md_to_html(md_text)
         title = label if label else md_path.parent.name
         html_text = wrap_body_html(body, title=title)
 
         out_html = md_path.parent / "body.html"
-        out_html.write_text(html_text, encoding="utf-8")
+        write_text_utf8(out_html, html_text)
 
         if i % 200 == 0:
             log.info(f"converted: {i}/{total}")
@@ -186,5 +184,5 @@ def write_tree_data_js(out_dir: Path, tree: List[Dict[str, Any]], log: Logger) -
     out_path = out_dir / "tree_data.js"
     payload = json.dumps(tree, ensure_ascii=False)
     js = "// Auto-generated (file:// friendly)\nwindow.RULENAVI_TREE = " + payload + ";\n"
-    out_path.write_text(js, encoding="utf-8")
+    write_text_utf8(out_path, js)
     log.info(f"write: {out_path}")

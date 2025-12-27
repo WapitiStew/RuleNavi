@@ -1,11 +1,36 @@
 # -*- coding: utf-8 -*-
+##
+# @file src/sitegen/page_builders/page_products.py
+# @brief Generate products page HTML stub.
+#
+# @if japanese
+# »•iƒy[ƒW(products.html)‚ÌƒXƒ^ƒuHTML‚ğ¶¬‚µ‚Ü‚·B¶ƒyƒCƒ“‚ÉStubƒJ[ƒh‚ğ”z’u‚µAƒcƒŠ[‚Í“Ç‚İ‚İ‚Ü‚¹‚ñB
+# @endif
+#
+# @if english
+# Generates a stub products page (products.html) with a stub card on the left pane and no tree data.
+# @endif
+#
 from __future__ import annotations
 
 from sitegen.page_builders.common import SiteContext, build_page_html, stub_left_html, write_text
 
 
+##
+# @brief Write products page / »•iƒy[ƒW‚ğ‘‚«o‚·
+#
+# @if japanese
+# »•iƒy[ƒW‚ÌƒXƒ^ƒu‚ğ¶¬‚µA¶ƒyƒCƒ“‚ÉStubƒJ[ƒh‚ğ•\¦‚µ‚Äproducts.html‚Ö•Û‘¶‚µ‚Ü‚·B
+# @endif
+#
+# @if english
+# Builds the products page stub, shows a stub card on the left pane, and saves to products.html.
+# @endif
+#
+# @param ctx [in]  ƒTƒCƒgƒRƒ“ƒeƒLƒXƒg / Site context
+
 def write(ctx: SiteContext) -> None:
-    title = "è£½å“"
+    title = "»•i"
     html = build_page_html(
         site_title=ctx.site_title,
         page_title=title,
