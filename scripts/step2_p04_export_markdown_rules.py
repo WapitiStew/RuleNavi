@@ -8,8 +8,8 @@ import setting_helper as sh
 
 DEFAULT_MANIFEST = "manifest_rule_cap.tsv"
 DEFAULT_MD = "body.md"
-KEY_TSV_MANIFEST_RULE_CAP = "TSV_MANIFEST_RULE_CAP"   # optional in setting.csv
-KEY_MD_BODY_FILENAME     = "MD_BODY_FILENAME"         # optional in setting.csv
+KEY_TSV_MANIFEST_RULE_CAP = "TSV_MANIFEST_RULE_CAP"  # optional in setting.csv
+KEY_MD_BODY_FILENAME = "MD_BODY_FILENAME"  # optional in setting.csv
 
 
 def safe_seg(s: str) -> str:
@@ -35,14 +35,16 @@ def norm(v):
 
 def tree_lines(nodes):
     out = []
+
     def walk(items, prefix):
         last = len(items) - 1
         for i, n in enumerate(items):
-            is_last = (i == last)
+            is_last = i == last
             out.append(prefix + ("└ " if is_last else "├ ") + n["label"])
             ch = n.get("children") or []
             if ch:
                 walk(ch, prefix + ("  " if is_last else "│ "))
+
     walk(nodes, "")
     return out
 
@@ -61,7 +63,7 @@ def load_manifest(setting_csv):
     if not path.exists():
         raise FileNotFoundError(f"manifest not found: {path}")
 
-    req = {"type_path","major_path","sub_path","id_rule","key_rule","id_cap","out_dir"}
+    req = {"type_path", "major_path", "sub_path", "id_rule", "key_rule", "id_cap", "out_dir"}
     rules = {}
 
     with path.open("r", encoding="utf-8", newline="") as f:
@@ -84,12 +86,12 @@ def load_manifest(setting_csv):
             if key not in rules:
                 rules[key] = {
                     "type": (row.get("type_path") or "").strip(),
-                    "maj":  (row.get("major_path") or "").strip(),
-                    "sub":  (row.get("sub_path") or "").strip(),
+                    "maj": (row.get("major_path") or "").strip(),
+                    "sub": (row.get("sub_path") or "").strip(),
                     "id_rule": id_rule,
                     "key_rule": (row.get("key_rule") or "").strip(),
                     "rule_dir": rule_dir,
-                    "caps": []
+                    "caps": [],
                 }
 
             if id_cap and all(c["id_cap"] != id_cap for c in rules[key]["caps"]):
@@ -106,12 +108,12 @@ def write_or_check(path: Path, content: str, overwrite: bool, check_only: bool):
     try:
         existed = path.exists()
         if check_only:
-            return ("OK","exists") if existed else ("NG","missing")
+            return ("OK", "exists") if existed else ("NG", "missing")
         path.parent.mkdir(parents=True, exist_ok=True)
         if existed and (not overwrite):
-            return ("OK","exists")
+            return ("OK", "exists")
         path.write_text(content, encoding="utf-8")
-        return ("OK","updated" if existed else "created") if path.exists() else ("NG","failed")
+        return ("OK", "updated" if existed else "created") if path.exists() else ("NG", "failed")
     except Exception as e:
         return ("NG", f"failed({type(e).__name__})")
 
@@ -134,27 +136,27 @@ def main():
         print(f"[Error] {e}")
         return 2
 
-    md_name = (gs(setting_csv, KEY_MD_BODY_FILENAME, DEFAULT_MD).strip() or DEFAULT_MD)
+    md_name = gs(setting_csv, KEY_MD_BODY_FILENAME, DEFAULT_MD).strip() or DEFAULT_MD
 
     # tables / columns (setting.csv 依存)
-    tbl_rules   = str(rs.get_setting_value(setting_csv, sk.KEY_TBL_RULES))
+    tbl_rules = str(rs.get_setting_value(setting_csv, sk.KEY_TBL_RULES))
     tbl_request = str(rs.get_setting_value(setting_csv, sk.KEY_TBL_REQUEST))
 
-    c_rules_pkey   = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_RULES_PKEY))
-    c_rules_id     = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_RULES_ID_RULE))
-    c_rules_name   = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_RULES_NAME_RULE))
-    c_rules_link   = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_RULES_LINK))
-    c_rules_cr     = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_RULES_CREATED_DATE))
-    c_rules_up     = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_RULES_UPDATE_DATE))
+    c_rules_pkey = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_RULES_PKEY))
+    c_rules_id = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_RULES_ID_RULE))
+    c_rules_name = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_RULES_NAME_RULE))
+    c_rules_link = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_RULES_LINK))
+    c_rules_cr = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_RULES_CREATED_DATE))
+    c_rules_up = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_RULES_UPDATE_DATE))
 
-    c_req_pkey     = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_REQUEST_PKEY))
+    c_req_pkey = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_REQUEST_PKEY))
     c_req_key_rule = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_REQUEST_KEY_RULE))
-    c_req_id_cap   = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_REQUEST_ID_CAP))
-    c_req_cap_tit  = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_REQUEST_FTITLE_CAPTER))
-    c_req_sec_tit  = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_REQUEST_TITLE_SECTION))
-    c_req_top      = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_REQUEST_FTOP_BODY))
-    c_req_low      = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_REQUEST_LOW_BODY))
-    c_req_ref      = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_REQUEST_REFERENCE))
+    c_req_id_cap = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_REQUEST_ID_CAP))
+    c_req_cap_tit = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_REQUEST_FTITLE_CAPTER))
+    c_req_sec_tit = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_REQUEST_TITLE_SECTION))
+    c_req_top = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_REQUEST_FTOP_BODY))
+    c_req_low = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_REQUEST_LOW_BODY))
+    c_req_ref = str(rs.get_setting_value(setting_csv, sk.KEY_ITM_REQUEST_REFERENCE))
 
     ok = ng = 0
 
@@ -175,18 +177,24 @@ def main():
                 row = con.execute(sql_cap_title, (key_rule, c["id_cap"])).fetchone()
                 cap_titles[c["id_cap"]] = norm(row["title_capter"]) if row else ""
 
-            title = f'{r["id_rule"]} {norm(meta.get("name_rule"))}'.strip()
+            title = f"{r['id_rule']} {norm(meta.get('name_rule'))}".strip()
             lines = [f"# {title}", "", f"- key_rule: {key_rule}"]
-            if norm(meta.get("link")):         lines.append(f"- link: {norm(meta.get('link'))}")
-            if norm(meta.get("created_date")): lines.append(f"- created: {norm(meta.get('created_date'))}")
-            if norm(meta.get("update_date")):  lines.append(f"- updated: {norm(meta.get('update_date'))}")
+            if norm(meta.get("link")):
+                lines.append(f"- link: {norm(meta.get('link'))}")
+            if norm(meta.get("created_date")):
+                lines.append(f"- created: {norm(meta.get('created_date'))}")
+            if norm(meta.get("update_date")):
+                lines.append(f"- updated: {norm(meta.get('update_date'))}")
             lines.append("")
 
             if r["caps"]:
                 lines += ["## Chapters", ""]
                 for c in r["caps"]:
                     id_cap = c["id_cap"]
-                    lines.append(f"- [{id_cap}] {cap_titles.get(id_cap,'')}".strip() + f"  (./{safe_seg(id_cap)}/{md_name})")
+                    lines.append(
+                        f"- [{id_cap}] {cap_titles.get(id_cap, '')}".strip()
+                        + f"  (./{safe_seg(id_cap)}/{md_name})"
+                    )
                 lines.append("")
             else:
                 lines += ["> (no chapters)", ""]
@@ -195,7 +203,8 @@ def main():
             rule_md_path = Path(r["rule_dir"]) / md_name
             st, act = write_or_check(rule_md_path, rule_md, a.overwrite, a.check_only)
             r["md_path"], r["st"], r["act"] = rule_md_path, st, act
-            ok += (st == "OK"); ng += (st != "OK")
+            ok += st == "OK"
+            ng += st != "OK"
 
             for c in r["caps"]:
                 id_cap = c["id_cap"]
@@ -205,24 +214,38 @@ def main():
                 cap_t = ""
                 for row in rows:
                     t = norm(row["title_capter"])
-                    if t: cap_t = t; break
+                    if t:
+                        cap_t = t
+                        break
 
-                cap_lines = [f"# {id_cap} {cap_t}".strip(), "", f'- id_rule: {r["id_rule"]}', f"- key_rule: {key_rule}", ""]
+                cap_lines = [
+                    f"# {id_cap} {cap_t}".strip(),
+                    "",
+                    f"- id_rule: {r['id_rule']}",
+                    f"- key_rule: {key_rule}",
+                    "",
+                ]
                 if not rows:
                     cap_lines += ["> (no sections)", ""]
                 else:
                     for row in rows:
                         sec = norm(row["title_section"])
-                        if sec: cap_lines += [f"## {sec}", ""]
-                        body = "\n\n".join([p for p in [norm(row["top_body"]), norm(row["low_body"])] if p])
-                        if body: cap_lines += [body, ""]
+                        if sec:
+                            cap_lines += [f"## {sec}", ""]
+                        body = "\n\n".join(
+                            [p for p in [norm(row["top_body"]), norm(row["low_body"])] if p]
+                        )
+                        if body:
+                            cap_lines += [body, ""]
                         ref = norm(row["reference"])
-                        if ref: cap_lines += [f"- reference: {ref}", ""]
+                        if ref:
+                            cap_lines += [f"- reference: {ref}", ""]
 
                 cap_md = "\n".join(cap_lines).rstrip() + "\n"
                 cst, cact = write_or_check(cap_md_path, cap_md, a.overwrite, a.check_only)
                 c["md_path"], c["st"], c["act"] = cap_md_path, cst, cact
-                ok += (cst == "OK"); ng += (cst != "OK")
+                ok += cst == "OK"
+                ng += cst != "OK"
 
     print("\n=== Step2-5 Markdown Export Check ===")
     print(f"DB      : {db.as_posix()}")
@@ -232,8 +255,13 @@ def main():
 
     nodes = []
     for r in rules:
-        kids = [{"label": f'{c["md_path"].as_posix()} ({c["act"]}): {c["st"]}', "children": []} for c in r["caps"]]
-        nodes.append({"label": f'{r["md_path"].as_posix()} ({r["act"]}): {r["st"]}', "children": kids})
+        kids = [
+            {"label": f"{c['md_path'].as_posix()} ({c['act']}): {c['st']}", "children": []}
+            for c in r["caps"]
+        ]
+        nodes.append(
+            {"label": f"{r['md_path'].as_posix()} ({r['act']}): {r['st']}", "children": kids}
+        )
 
     for line in tree_lines(nodes):
         print(line)

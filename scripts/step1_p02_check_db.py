@@ -6,6 +6,7 @@ import read_setting as rs
 import setting_key as sk
 import setting_helper as sh
 
+
 def quote_ident(name: str) -> str:
     """
     SQLite identifier quote.
@@ -17,8 +18,8 @@ def quote_ident(name: str) -> str:
 
 def main():
     setting_csv = rs.load_setting_csv()  # sub.py から見た data/sample.csv を読む
-    db_name   = rs.get_setting_value( setting_csv, sk.KEY_DB_NAME )
-    DB_PATH     = Path( sh.rules_file_fullpath( setting_csv, db_name ) )   # 作成される SQLite ファイル
+    db_name = rs.get_setting_value(setting_csv, sk.KEY_DB_NAME)
+    DB_PATH = Path(sh.rules_file_fullpath(setting_csv, db_name))  # 作成される SQLite ファイル
     print(f"DB Path:    {DB_PATH}")
     print(setting_csv)
 
@@ -30,7 +31,9 @@ def main():
     cursor = conn.cursor()
 
     # テーブル一覧を表示
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';")
+    cursor.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';"
+    )
     tables_in_db = {row[0] for row in cursor.fetchall()}
     print("Tables in DB:", sorted(tables_in_db))
 
@@ -42,7 +45,7 @@ def main():
     if tbl_rows.empty:
         print("No TBL_ entries found in setting CSV.")
         return
-    
+
     # テーブルチェック.
     print("\n=== Check tables defined by TBL_* in CSV ===")
     for _, row in tbl_rows.iterrows():
@@ -70,6 +73,7 @@ def main():
         print("-" * 60)
 
     conn.close()
-    
+
+
 if __name__ == "__main__":
     main()

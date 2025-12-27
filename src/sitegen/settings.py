@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from typing import Any
 
+
 def project_root() -> Path:
     # tools/*.bat は repo root に cd してから実行するので、まず CWD を信用する
     cwd = Path.cwd().resolve()
@@ -82,7 +83,9 @@ def resolve_site_icon_filename(setting_csv: Any, rs: Any, sk: Any) -> str:
     return get_setting(setting_csv, rs, k, "icon.png")
 
 
-def resolve_tree_json_fullpath(setting_csv: Any, root: Path, build_dir: Path, rs: Any, sk: Any, sh: Any) -> Path:
+def resolve_tree_json_fullpath(
+    setting_csv: Any, root: Path, build_dir: Path, rs: Any, sk: Any, sh: Any
+) -> Path:
     name = resolve_tree_json_name(setting_csv, rs, sk)
 
     # setting_helper があれば優先
@@ -98,7 +101,9 @@ def resolve_tree_json_fullpath(setting_csv: Any, root: Path, build_dir: Path, rs
     return (build_dir / rules_dir / json_dir / name).resolve()
 
 
-def resolve_site_dir(setting_csv: Any, root: Path, build_dir: Path, rs: Any, sk: Any, sh: Any) -> Path:
+def resolve_site_dir(
+    setting_csv: Any, root: Path, build_dir: Path, rs: Any, sk: Any, sh: Any
+) -> Path:
     # setting_helper があれば優先
     if sh and hasattr(sh, "rule_html_dirpath"):
         try:

@@ -1,6 +1,6 @@
 # 一時ファイル
 *.log
-__*
+__memo_*
 *.pptx
 
 # ビルドディレクトリ
@@ -11,10 +11,18 @@ __*
 **/.git/
 **/.vscode/
 /build/
+**/bin/
+/bin/
+.ruff_cache
+/.ruff_cache/
 
-# python caches
-**/__pycache__/
+# Local venv
+.venv/
+
+# Python caches
+__pycache__/
 *.pyc
+*.pyo
 
 # venv
 .venv/
@@ -24,3 +32,8 @@ venv/
 .vscode/
 .idea/
 .DS_Store
+
+
+# Local tools installed by bootstrap
+bin/
+bin/sqlite/*.zip

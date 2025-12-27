@@ -4,12 +4,12 @@ from pathlib import Path
 import read_setting as rs
 import setting_key as sk
 
-def main():
 
+def main():
     setting_csv = rs.load_setting_csv()  # sub.py から見た data/sample.csv を読む
-    resrc_dir = rs.get_setting_value( setting_csv, sk.KEY_RESRC_DIR )
-    src_excel = rs.get_setting_value( setting_csv, sk.KEY_SRC_EXCEL )
-    EXCEL_PATH  = Path( resrc_dir + "/" + src_excel )   # Excel ファイル名（必要なら変更）
+    resrc_dir = rs.get_setting_value(setting_csv, sk.KEY_RESRC_DIR)
+    src_excel = rs.get_setting_value(setting_csv, sk.KEY_SRC_EXCEL)
+    EXCEL_PATH = Path(resrc_dir + "/" + src_excel)  # Excel ファイル名（必要なら変更）
 
     # Excel ファイルのシート一覧を表示
     xls = pd.ExcelFile(EXCEL_PATH)
@@ -20,6 +20,7 @@ def main():
         df = pd.read_excel(EXCEL_PATH, sheet_name=sheet_name)
         print(f"=== {sheet_name} head ===")
         print(df.head())
+
 
 if __name__ == "__main__":
     main()

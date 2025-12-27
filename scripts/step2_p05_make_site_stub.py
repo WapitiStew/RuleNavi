@@ -78,7 +78,9 @@ from sitegen.pages import (
 def main() -> int:
     parser = argparse.ArgumentParser(description="Step2-6: build serverless site (split version).")
     parser.add_argument("--quiet", action="store_true", help="less logs (default: verbose)")
-    parser.add_argument("--out-dir", type=str, default="", help="override output dir (default: build/rules/html)")
+    parser.add_argument(
+        "--out-dir", type=str, default="", help="override output dir (default: build/rules/html)"
+    )
     args = parser.parse_args()
 
     log = Logger(verbose=(not args.quiet))
@@ -89,7 +91,11 @@ def main() -> int:
     setting_csv = rs.load_setting_csv()
     root = project_root()
     build_dir = resolve_build_dir(setting_csv, root, rs, sk)
-    site_dir = Path(args.out_dir).resolve() if args.out_dir else resolve_site_dir(setting_csv, root, build_dir, rs, sk, sh)
+    site_dir = (
+        Path(args.out_dir).resolve()
+        if args.out_dir
+        else resolve_site_dir(setting_csv, root, build_dir, rs, sk, sh)
+    )
 
     site_dir.mkdir(parents=True, exist_ok=True)
     log.info(f"project_root : {root}")
@@ -121,14 +127,14 @@ def main() -> int:
     # ------------------------------------------------------------
     # data 出力（file://対応のため fetch せず JS に埋め込み）
     # ------------------------------------------------------------
-    data_dir = (site_dir / "data")
+    data_dir = site_dir / "data"
     data_dir.mkdir(parents=True, exist_ok=True)
     write_tree_data_js(data_dir, tree, log)
 
     # ------------------------------------------------------------
     # assets 出力（共通CSS/JS）
     # ------------------------------------------------------------
-    assets_dir = (site_dir / "assets")
+    assets_dir = site_dir / "assets"
     assets_dir.mkdir(parents=True, exist_ok=True)
 
     write_assets(assets_dir, log)

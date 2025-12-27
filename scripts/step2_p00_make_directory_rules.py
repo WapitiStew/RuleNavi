@@ -43,49 +43,48 @@ def main():
     setting_csv = rs.load_setting_csv()
     print(setting_csv)
 
-
     # DBパス
-    db_name   = rs.get_setting_value( setting_csv, sk.KEY_DB_NAME )
-    DB_PATH     = Path( sh.rules_file_fullpath( setting_csv, db_name ) )   # 作成される SQLite ファイル
+    db_name = rs.get_setting_value(setting_csv, sk.KEY_DB_NAME)
+    DB_PATH = Path(sh.rules_file_fullpath(setting_csv, db_name))  # 作成される SQLite ファイル
     if not DB_PATH.exists():
         print("DB not found:", DB_PATH)
         return
 
     # ---- 出力先（まずは固定でOK。必要なら後で setting.csv に移す）----
-    out_root = Path( sh.rules_file_dir_path( setting_csv ) )
-    print( out_root)
+    out_root = Path(sh.rules_file_dir_path(setting_csv))
+    print(out_root)
     manifest_path = Path(out_root._str + "/manifest_rule_cap.tsv")
     out_root.mkdir(parents=True, exist_ok=True)
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
 
     # ---- テーブル名 ----
-    tbl_cat_type  = rs.get_setting_value(setting_csv, sk.KEY_TBL_CAT_TYPE)
+    tbl_cat_type = rs.get_setting_value(setting_csv, sk.KEY_TBL_CAT_TYPE)
     tbl_cat_major = rs.get_setting_value(setting_csv, sk.KEY_TBL_CAT_MAJOR)
-    tbl_cat_sub   = rs.get_setting_value(setting_csv, sk.KEY_TBL_CAT_SUB)
-    tbl_rules     = rs.get_setting_value(setting_csv, sk.KEY_TBL_RULES)
-    tbl_request   = rs.get_setting_value(setting_csv, sk.KEY_TBL_REQUEST)
+    tbl_cat_sub = rs.get_setting_value(setting_csv, sk.KEY_TBL_CAT_SUB)
+    tbl_rules = rs.get_setting_value(setting_csv, sk.KEY_TBL_RULES)
+    tbl_request = rs.get_setting_value(setting_csv, sk.KEY_TBL_REQUEST)
 
     # ---- カラム名（setting.csv から取得）----
-    ct_pkey   = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_TYPE_PKEY)
-    ct_title  = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_TYPE_TITLE_EN)  # フォールバック用
-    ct_path   = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_TYPE_PATH)
+    ct_pkey = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_TYPE_PKEY)
+    ct_title = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_TYPE_TITLE_EN)  # フォールバック用
+    ct_path = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_TYPE_PATH)
 
-    cm_pkey   = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_MAJOR_PKEY)
-    cm_title  = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_MAJOR_TITLE_EN)
-    cm_fkey   = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_MAJOR_FKEY_CAT_TYPE)
-    cm_path   = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_MAJOR_PATH)
+    cm_pkey = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_MAJOR_PKEY)
+    cm_title = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_MAJOR_TITLE_EN)
+    cm_fkey = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_MAJOR_FKEY_CAT_TYPE)
+    cm_path = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_MAJOR_PATH)
 
-    cs_pkey   = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_SUB_PKEY)
-    cs_title  = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_SUB_TITLE_EN)
-    cs_fkey   = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_SUB_FKEY_CAT_MAJOR)
-    cs_path   = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_SUB_PATH)
+    cs_pkey = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_SUB_PKEY)
+    cs_title = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_SUB_TITLE_EN)
+    cs_fkey = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_SUB_FKEY_CAT_MAJOR)
+    cs_path = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_SUB_PATH)
 
-    r_pkey    = rs.get_setting_value(setting_csv, sk.KEY_ITM_RULES_PKEY)
+    r_pkey = rs.get_setting_value(setting_csv, sk.KEY_ITM_RULES_PKEY)
     r_id_rule = rs.get_setting_value(setting_csv, sk.KEY_ITM_RULES_ID_RULE)
     r_fkey_cs = rs.get_setting_value(setting_csv, sk.KEY_ITM_RULES_FKEY_CAT_SUB)
 
     req_key_rule = rs.get_setting_value(setting_csv, sk.KEY_ITM_REQUEST_KEY_RULE)
-    req_id_cap   = rs.get_setting_value(setting_csv, sk.KEY_ITM_REQUEST_ID_CAP)
+    req_id_cap = rs.get_setting_value(setting_csv, sk.KEY_ITM_REQUEST_ID_CAP)
 
     # ---- SQL（大>中>小>ルール>章）----
     sql = f"""
@@ -143,12 +142,14 @@ def main():
 
     with manifest_path.open("w", encoding="utf-8", newline="") as f:
         w = csv.writer(f, delimiter="\t")
-        w.writerow(["type_path", "major_path", "sub_path", "id_rule", "key_rule", "id_cap", "out_dir"])
+        w.writerow(
+            ["type_path", "major_path", "sub_path", "id_rule", "key_rule", "id_cap", "out_dir"]
+        )
 
         for r in rows:
-            type_seg  = pick_segment(r["type_path"],  r["type_title_en"],  r["key_cat_type"])
+            type_seg = pick_segment(r["type_path"], r["type_title_en"], r["key_cat_type"])
             major_seg = pick_segment(r["major_path"], r["major_title_en"], r["key_cat_major"])
-            sub_seg   = pick_segment(r["sub_path"],   r["sub_title_en"],   r["key_cat_sub"])
+            sub_seg = pick_segment(r["sub_path"], r["sub_title_en"], r["key_cat_sub"])
 
             id_rule_seg = safe_segment(r["id_rule"])
             base_dir = out_root / type_seg / major_seg / sub_seg / id_rule_seg
@@ -165,7 +166,17 @@ def main():
             else:
                 out_dir.mkdir(parents=True, exist_ok=True)
 
-            w.writerow([type_seg, major_seg, sub_seg, r["id_rule"], r["key_rule"], id_cap or "", str(out_dir)])
+            w.writerow(
+                [
+                    type_seg,
+                    major_seg,
+                    sub_seg,
+                    r["id_rule"],
+                    r["key_rule"],
+                    id_cap or "",
+                    str(out_dir),
+                ]
+            )
 
     conn.close()
 

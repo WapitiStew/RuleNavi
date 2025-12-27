@@ -71,7 +71,9 @@ def _load_manifest_rule_dirs(setting_csv: Path) -> Dict[str, ManifestRuleInfo]:
     manifest の列: type_path, major_path, sub_path, id_rule, key_rule, id_cap, out_dir:contentReference[oaicite:2]{index=2}
     """
     out_root = Path(sh.rules_file_dir_path(setting_csv))  # build/.../rules/<RULES_FILE_DIR> の想定
-    manifest_name = _get_setting_or_default(setting_csv, KEY_TSV_MANIFEST_RULE_CAP, DEFAULT_MANIFEST_TSV_NAME)
+    manifest_name = _get_setting_or_default(
+        setting_csv, KEY_TSV_MANIFEST_RULE_CAP, DEFAULT_MANIFEST_TSV_NAME
+    )
     manifest_path = out_root / manifest_name
 
     if not manifest_path.exists():
@@ -81,9 +83,19 @@ def _load_manifest_rule_dirs(setting_csv: Path) -> Dict[str, ManifestRuleInfo]:
 
     with manifest_path.open("r", encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f, delimiter="\t")
-        required = {"type_path", "major_path", "sub_path", "id_rule", "key_rule", "id_cap", "out_dir"}
+        required = {
+            "type_path",
+            "major_path",
+            "sub_path",
+            "id_rule",
+            "key_rule",
+            "id_cap",
+            "out_dir",
+        }
         if reader.fieldnames is None or not required.issubset(set(reader.fieldnames)):
-            raise ValueError(f"manifest header mismatch. required={sorted(required)} got={reader.fieldnames}")
+            raise ValueError(
+                f"manifest header mismatch. required={sorted(required)} got={reader.fieldnames}"
+            )
 
         for row in reader:
             id_rule = (row.get("id_rule") or "").strip()
@@ -212,7 +224,6 @@ ORDER BY
 
     print(f"SQL:\n {sql}")
 
-
     con = sqlite3.connect(db_path)
     con.row_factory = sqlite3.Row
     try:
@@ -222,14 +233,16 @@ ORDER BY
         con.close()
 
 
-def export_rules_index(setting_csv: Path, out_path: Path ) -> None:
+def export_rules_index(setting_csv: Path, out_path: Path) -> None:
     manifest_by_id: Dict[str, ManifestRuleInfo] = _load_manifest_rule_dirs(setting_csv)
     rows = _fetch_rules_flat(setting_csv)
 
     # パス組み立て
     rules_dir = rs.get_setting_value(setting_csv, sk.KEY_RULES_DIR)
     rules_file_dir = rs.get_setting_value(setting_csv, sk.KEY_RULES_FILE_DIR)
-    md_filename = _get_setting_or_default(setting_csv, KEY_MD_RULE_FILENAME, DEFAULT_RULE_MD_FILENAME)
+    md_filename = _get_setting_or_default(
+        setting_csv, KEY_MD_RULE_FILENAME, DEFAULT_RULE_MD_FILENAME
+    )
 
     # rules_file_dir が空/ドットなら省略して整える
     def _prefix() -> str:
@@ -273,17 +286,14 @@ def export_rules_index(setting_csv: Path, out_path: Path ) -> None:
                 "key_rule": str(r.get("pkey_rule") or (info.key_rule if info else "")),
                 "title_rule": str(r.get("title_rule") or ""),
                 "state": state,
-
                 "key_type": str(r.get("key_type") or ""),
                 "type": type_label,
                 "key_major": str(r.get("key_major") or ""),
                 "major": major_label,
                 "key_sub": str(r.get("key_sub") or ""),
                 "sub": sub_label,
-
                 "md_path": md_path,
                 "link": link,
-
                 "cap_count": int(info.cap_count) if info else 0,
                 "created_date": r.get("created_date"),
                 "update_date": r.get("update_date"),
@@ -294,7 +304,6 @@ def export_rules_index(setting_csv: Path, out_path: Path ) -> None:
     print(out_path)
     print(items)
 
-
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(items, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -302,12 +311,15 @@ def export_rules_index(setting_csv: Path, out_path: Path ) -> None:
 
 
 def main() -> int:
-
     setting_csv = rs.load_setting_csv()
-    print( setting_csv )
+    print(setting_csv)
 
-    out_path = Path( sh.json_file_fullpath( setting_csv, rs.get_setting_value( setting_csv, sk.KEY_JSON_MAIN_INDEX ) ) )
-    print( f"Out path: {out_path}" )
+    out_path = Path(
+        sh.json_file_fullpath(
+            setting_csv, rs.get_setting_value(setting_csv, sk.KEY_JSON_MAIN_INDEX)
+        )
+    )
+    print(f"Out path: {out_path}")
 
     export_rules_index(setting_csv, out_path)
     return 0

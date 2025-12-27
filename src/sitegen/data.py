@@ -86,11 +86,6 @@ def convert_md_targets_to_html(
 def write_tree_data_js(out_dir: Path, tree: List[Dict[str, Any]], log: Logger) -> None:
     out_path = out_dir / "tree_data.js"
     payload = json.dumps(tree, ensure_ascii=False)
-    js = (
-        "// Auto-generated (file:// friendly)\n"
-        "window.RULENAVI_TREE = "
-        + payload
-        + ";\n"
-    )
+    js = "// Auto-generated (file:// friendly)\nwindow.RULENAVI_TREE = " + payload + ";\n"
     out_path.write_text(js, encoding="utf-8")
     log.info(f"write: {out_path}")

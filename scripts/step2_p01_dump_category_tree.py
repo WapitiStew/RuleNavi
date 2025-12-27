@@ -63,7 +63,7 @@ def resolve_db_path(setting_col: pd.DataFrame, setting_col_path: Path) -> Path:
     @if english
         @brief Resolve SQLite DB path from DB_NAME in setting.col_subv.
     @endif
-    """    
+    """
     db_name = str(rs.get_setting_value(setting_col, sk.KEY_DB_NAME)).strip()
     raw = Path(db_name)
 
@@ -82,12 +82,14 @@ def resolve_db_path(setting_col: pd.DataFrame, setting_col_path: Path) -> Path:
             candidates.append(base / raw)
 
         # common fallbacks
-        candidates.extend([
-            base / "rules" / "rule.db",
-            base / "rules" / "rules.db",
-            base / "rules.db",
-            base / "rule.db",
-        ])
+        candidates.extend(
+            [
+                base / "rules" / "rule.db",
+                base / "rules" / "rules.db",
+                base / "rules.db",
+                base / "rule.db",
+            ]
+        )
 
     # de-dup
     seen: set[str] = set()
@@ -134,14 +136,14 @@ def read_table_columns(
         ob_sql = ", ".join(quote_ident(c) for c in order_by)
         sql += f" ORDER BY {ob_sql}"
 
-    print(f"[Info] SQL: {sql}")    
+    print(f"[Info] SQL: {sql}")
     return pd.read_sql_query(sql, conn)
 
 
 def get_children(
-        node_key: Tuple[str, Any],
-        type_to_majors: Dict[Any, List[Tuple[str, Tuple[str, Any]]]],
-        major_to_subs: Dict[Any, List[Tuple[str, Tuple[str, Any]]]]
+    node_key: Tuple[str, Any],
+    type_to_majors: Dict[Any, List[Tuple[str, Tuple[str, Any]]]],
+    major_to_subs: Dict[Any, List[Tuple[str, Tuple[str, Any]]]],
 ) -> List[Tuple[str, Tuple[str, Any]]]:
     kind, key = node_key
     if kind == "type":
@@ -150,20 +152,21 @@ def get_children(
         return major_to_subs.get(key, [])
     return []
 
+
 # -----------------------------------------------------------------------------
 # Tree rendering
 # -----------------------------------------------------------------------------
 def build_tree_lines(
     root_nodes: Sequence[Tuple[str, Tuple[str, Any]]],
     type_to_majors: Dict[Any, List[Tuple[str, Tuple[str, Any]]]],
-    major_to_subs: Dict[Any, List[Tuple[str, Tuple[str, Any]]]]
+    major_to_subs: Dict[Any, List[Tuple[str, Tuple[str, Any]]]],
 ) -> List[str]:
     lines: List[str] = []
 
     def walk(items: Sequence[Tuple[str, Tuple[str, Any]]], prefix: str) -> None:
         last_index = len(items) - 1
         for i, (label, node_key) in enumerate(items):
-            is_last = (i == last_index)
+            is_last = i == last_index
             branch = "└ " if is_last else "├ "
             lines.append(prefix + branch + label)
 
@@ -171,6 +174,7 @@ def build_tree_lines(
             if children:
                 extension = "  " if is_last else "│ "
                 walk(children, prefix + extension)
+
     walk(root_nodes, "")
     return lines
 
@@ -186,47 +190,47 @@ def dump_category_tree(*, out_path: Optional[Path]) -> None:
     @if english
         @brief Dump category tree (Type -> Major -> Sub) as a log text.
     @endif
-    """    
+    """
 
     logger = logging.getLogger(__name__)
 
-    setting_col= rs.load_setting_csv()
+    setting_col = rs.load_setting_csv()
 
     # DBパス
-    db_name   = rs.get_setting_value( setting_col, sk.KEY_DB_NAME )
-    DB_PATH     = Path( sh.rules_file_fullpath( setting_col, db_name ) )   # 作成される SQLite ファイル
+    db_name = rs.get_setting_value(setting_col, sk.KEY_DB_NAME)
+    DB_PATH = Path(sh.rules_file_fullpath(setting_col, db_name))  # 作成される SQLite ファイル
     if not DB_PATH.exists():
         print("DB not found:", DB_PATH)
         return
 
     # table names
-    tbl_cat_type  = rs.get_setting_value(setting_col, sk.KEY_TBL_CAT_TYPE)
+    tbl_cat_type = rs.get_setting_value(setting_col, sk.KEY_TBL_CAT_TYPE)
     tbl_cat_major = rs.get_setting_value(setting_col, sk.KEY_TBL_CAT_MAJOR)
-    tbl_cat_sub   = rs.get_setting_value(setting_col, sk.KEY_TBL_CAT_SUB)
+    tbl_cat_sub = rs.get_setting_value(setting_col, sk.KEY_TBL_CAT_SUB)
     print(f"[Info] TBL_CAME: {tbl_cat_type}")
     print(f"[Info] TBL_CAME: {tbl_cat_major}")
     print(f"[Info] TBL_CAME: {tbl_cat_sub}")
 
     # column names
-    col_type_pkey  = rs.get_setting_value(setting_col, sk.KEY_ITM_CAT_TYPE_PKEY)
-    col_type_title_jp   = rs.get_setting_value(setting_col, sk.KEY_ITM_CAT_TYPE_TITLE_JP)
-    col_type_title_en   = rs.get_setting_value(setting_col, sk.KEY_ITM_CAT_TYPE_TITLE_EN)
+    col_type_pkey = rs.get_setting_value(setting_col, sk.KEY_ITM_CAT_TYPE_PKEY)
+    col_type_title_jp = rs.get_setting_value(setting_col, sk.KEY_ITM_CAT_TYPE_TITLE_JP)
+    col_type_title_en = rs.get_setting_value(setting_col, sk.KEY_ITM_CAT_TYPE_TITLE_EN)
     print(f"[Info] COLUMN: {tbl_cat_type} : {col_type_pkey}")
     print(f"[Info] COLUMN: {tbl_cat_type} : {col_type_title_jp}")
     print(f"[Info] COLUMN: {tbl_cat_type} : {col_type_title_en}")
 
-    col_major_pkey      = rs.get_setting_value(setting_col, sk.KEY_ITM_CAT_MAJOR_PKEY)
-    col_major_tjp       = rs.get_setting_value(setting_col, sk.KEY_ITM_CAT_MAJOR_TITLE_JP)
-    col_major_ten       = rs.get_setting_value(setting_col, sk.KEY_ITM_CAT_MAJOR_TITLE_EN)
+    col_major_pkey = rs.get_setting_value(setting_col, sk.KEY_ITM_CAT_MAJOR_PKEY)
+    col_major_tjp = rs.get_setting_value(setting_col, sk.KEY_ITM_CAT_MAJOR_TITLE_JP)
+    col_major_ten = rs.get_setting_value(setting_col, sk.KEY_ITM_CAT_MAJOR_TITLE_EN)
     col_major_fkey_type = rs.get_setting_value(setting_col, sk.KEY_ITM_CAT_MAJOR_FKEY_CAT_TYPE)
     print(f"[Info] COLUMN: {tbl_cat_major} : {col_major_pkey}")
     print(f"[Info] COLUMN: {tbl_cat_major} : {col_major_tjp}")
     print(f"[Info] COLUMN: {tbl_cat_major} : {col_major_fkey_type}")
     print(f"[Info] COLUMN: {tbl_cat_major} : {col_major_fkey_type}")
 
-    col_sub_pkey       = rs.get_setting_value(setting_col, sk.KEY_ITM_CAT_SUB_PKEY)
-    col_sub_tjp        = rs.get_setting_value(setting_col, sk.KEY_ITM_CAT_SUB_TITLE_JP)
-    col_sub_ten        = rs.get_setting_value(setting_col, sk.KEY_ITM_CAT_SUB_TITLE_EN)
+    col_sub_pkey = rs.get_setting_value(setting_col, sk.KEY_ITM_CAT_SUB_PKEY)
+    col_sub_tjp = rs.get_setting_value(setting_col, sk.KEY_ITM_CAT_SUB_TITLE_JP)
+    col_sub_ten = rs.get_setting_value(setting_col, sk.KEY_ITM_CAT_SUB_TITLE_EN)
     col_sub_fkey_major = rs.get_setting_value(setting_col, sk.KEY_ITM_CAT_SUB_FKEY_CAT_MAJOR)
     print(f"[Info] COLUMN: {tbl_cat_sub} : {col_sub_pkey}")
     print(f"[Info] COLUMN: {tbl_cat_sub} : {col_sub_tjp}")
@@ -235,14 +239,29 @@ def dump_category_tree(*, out_path: Optional[Path]) -> None:
 
     # query DB
     with sqlite3.connect(DB_PATH) as conn:
-        type_df  = read_table_columns(conn, str(tbl_cat_type),  [col_type_pkey, col_type_title_jp, col_type_title_en], order_by=[col_type_pkey])
-        major_df = read_table_columns(conn, str(tbl_cat_major), [col_major_pkey, col_major_tjp, col_major_ten, col_major_fkey_type], order_by=[col_major_fkey_type, col_major_pkey])
-        sub_df   = read_table_columns(conn, str(tbl_cat_sub),   [col_sub_pkey, col_sub_tjp, col_sub_ten, col_sub_fkey_major], order_by=[col_sub_fkey_major, col_sub_pkey])
+        type_df = read_table_columns(
+            conn,
+            str(tbl_cat_type),
+            [col_type_pkey, col_type_title_jp, col_type_title_en],
+            order_by=[col_type_pkey],
+        )
+        major_df = read_table_columns(
+            conn,
+            str(tbl_cat_major),
+            [col_major_pkey, col_major_tjp, col_major_ten, col_major_fkey_type],
+            order_by=[col_major_fkey_type, col_major_pkey],
+        )
+        sub_df = read_table_columns(
+            conn,
+            str(tbl_cat_sub),
+            [col_sub_pkey, col_sub_tjp, col_sub_ten, col_sub_fkey_major],
+            order_by=[col_sub_fkey_major, col_sub_pkey],
+        )
 
     # index
     # 中分類を「大分類ごと」にまとめる
     majors_by_type: Dict[Any, List[Dict[str, Any]]] = {}
-    for _, row in major_df.iterrows():                                          #　中分類テーブルを確認
+    for _, row in major_df.iterrows():  # 中分類テーブルを確認
         majors_by_type.setdefault(row[col_major_fkey_type], []).append(row.to_dict())  #
     print(f"[Info] Dictionary: {majors_by_type}")
 
@@ -254,13 +273,15 @@ def dump_category_tree(*, out_path: Optional[Path]) -> None:
 
     # labels
     def label_type(r: Dict[str, Any]) -> str:
-        return f"[{r[col_type_pkey]}] {r.get(col_type_title_jp,'')} / {r.get(col_type_title_en,'')}"
+        return (
+            f"[{r[col_type_pkey]}] {r.get(col_type_title_jp, '')} / {r.get(col_type_title_en, '')}"
+        )
 
     def label_major(r: Dict[str, Any]) -> str:
-        return f"[{r[col_major_pkey]}] {r.get(col_major_tjp,'')} / {r.get(col_major_ten,'')}"
+        return f"[{r[col_major_pkey]}] {r.get(col_major_tjp, '')} / {r.get(col_major_ten, '')}"
 
     def label_sub(r: Dict[str, Any]) -> str:
-        return f"[{r[col_sub_pkey]}] {r.get(col_sub_tjp,'')} / {r.get(col_sub_ten,'')}"
+        return f"[{r[col_sub_pkey]}] {r.get(col_sub_tjp, '')} / {r.get(col_sub_ten, '')}"
 
     # tree nodes
     root_nodes: List[Tuple[str, Tuple[str, Any]]] = [
@@ -286,7 +307,7 @@ def dump_category_tree(*, out_path: Optional[Path]) -> None:
     ]
     text = "\n".join(header + lines) + "\n"
     print(text, end="")
-    
+
     if out_path is not None:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(text, encoding="utf-8")
@@ -295,11 +316,18 @@ def dump_category_tree(*, out_path: Optional[Path]) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Step2-2: Dump category tree from SQLite.")
-    parser.add_argument("--out", type=str, default="", help="Output text path (default: stdout only).")
-    parser.add_argument("--log-level", type=str, default="INFO", help="Logging level (DEBUG/INFO/WARNING/ERROR).")
+    parser.add_argument(
+        "--out", type=str, default="", help="Output text path (default: stdout only)."
+    )
+    parser.add_argument(
+        "--log-level", type=str, default="INFO", help="Logging level (DEBUG/INFO/WARNING/ERROR)."
+    )
     args = parser.parse_args()
 
-    logging.basicConfig(level=getattr(logging, args.log_level.upper(), logging.INFO), format="%(levelname)s: %(message)s")
+    logging.basicConfig(
+        level=getattr(logging, args.log_level.upper(), logging.INFO),
+        format="%(levelname)s: %(message)s",
+    )
 
     out_path: Optional[Path] = Path(args.out) if args.out else None
     dump_category_tree(out_path=out_path)

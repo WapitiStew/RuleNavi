@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """!
-    @file sub.py
-    @brief \jp CSV読み込みユーティリティ \en CSV loader utilities
-    @details \jp CSVファイルを読み込む補助関数群。 \en Helper functions to load CSV files.
+@file sub.py
+@brief \jp CSV読み込みユーティリティ \en CSV loader utilities
+@details \jp CSVファイルを読み込む補助関数群。 \en Helper functions to load CSV files.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -58,10 +59,12 @@ def load_csv(csv_path: Union[str, Path], *, encoding: str = "utf-8-sig"):
 # @throws FileNotFoundError \jp 指定ファイルが存在しない場合 \en If the file does not exist
 # @throws ImportError \jp pandasがインストールされていない場合 \en If pandas is not installed
 ##
-def load_setting_csv(*, filename: str = "setting.csv", data_dir: str = "..", encoding: str = "utf-8-sig"):
+def load_setting_csv(
+    *, filename: str = "setting.csv", data_dir: str = "..", encoding: str = "utf-8-sig"
+):
     # 1) まずはカレント（RuleNavi直下想定）を優先する
     #    tools\*.bat が cd .. して ROOT に移動してから実行するため、ここで安定して拾える
-    cwd_candidate = (Path.cwd() / filename)
+    cwd_candidate = Path.cwd() / filename
     if cwd_candidate.exists():
         return load_csv(cwd_candidate, encoding=encoding)
 
@@ -94,7 +97,9 @@ def load_setting_csv(*, filename: str = "setting.csv", data_dir: str = "..", enc
 # @return \jp 行データ配列（列名→値のdict） \en List of rows (dict: column -> value)
 # @throws FileNotFoundError \jp 指定ファイルが存在しない場合 \en If the file does not exist
 ##
-def load_csv_as_dicts(csv_path: Union[str, Path], *, encoding: str = "utf-8-sig") -> List[Dict[str, str]]:
+def load_csv_as_dicts(
+    csv_path: Union[str, Path], *, encoding: str = "utf-8-sig"
+) -> List[Dict[str, str]]:
     import csv
 
     csv_path = Path(csv_path)
@@ -112,7 +117,6 @@ def load_csv_as_dicts(csv_path: Union[str, Path], *, encoding: str = "utf-8-sig"
 # @param key \jp 取得したいキー \en Key to retrieve
 ##
 def get_setting_value(csv: pd.DataFrame, key: str) -> str:
-
     setting_key = csv.set_index(csv.columns[0])
     setting_val = csv.columns[1]
     return setting_key.at[key, setting_val]
@@ -125,7 +129,6 @@ def get_setting_value(csv: pd.DataFrame, key: str) -> str:
 # @param key \jp 取得したいキー \en Key to retrieve
 ##
 def get_setting_type(csv: pd.DataFrame, key: str) -> str:
-
     setting_key = csv.set_index(csv.columns[0])
     setting_type = csv.columns[2]
     return setting_key.at[key, setting_type]
@@ -138,7 +141,6 @@ def get_setting_type(csv: pd.DataFrame, key: str) -> str:
 # @param key \jp 取得したいキー \en Key to retrieve
 ##
 def get_setting_remark(csv: pd.DataFrame, key: str) -> str:
-
     setting_key = csv.set_index(csv.columns[0])
     setting_remark = csv.columns[3]
     return setting_key.at[key, setting_remark]
@@ -150,7 +152,9 @@ def get_setting_remark(csv: pd.DataFrame, key: str) -> str:
 # @param csv \jp 読み込んだCSVデータ（DataFrame） \en Loaded CSV data (DataFrame)
 # @param key \jp 取得したいキー \en Key to retrieve
 ##
-def get_setting_sql_table_item(csv: pd.DataFrame, groups: List[str]) -> Dict[str, List[Tuple[str, str, str]]]:
+def get_setting_sql_table_item(
+    csv: pd.DataFrame, groups: List[str]
+) -> Dict[str, List[Tuple[str, str, str]]]:
     """
     ITM_*** 行を解析し、グループごとの列定義を返す。
     戻り値： { "RULES": [(col, type, remark), ...], "CAT_TYPE": [...], ... }
@@ -196,7 +200,9 @@ def get_setting_sql_table_item(csv: pd.DataFrame, groups: List[str]) -> Dict[str
 
     for g, cols in result.items():
         if len(cols) == 0:
-            raise ValueError(f"No column definitions found for group {g}. (Expected ITM_{g}_... rows)")
+            raise ValueError(
+                f"No column definitions found for group {g}. (Expected ITM_{g}_... rows)"
+            )
 
     return result
 
@@ -218,6 +224,8 @@ def get_setting_sql_table_item(csv: pd.DataFrame, groups: List[str]) -> Dict[str
 # @endif
 #
 ##
-def load_setting_col_subv(*, filename: str = "setting.col_subv", data_dir: str = ".", encoding: str = "utf-8-sig"):
+def load_setting_col_subv(
+    *, filename: str = "setting.col_subv", data_dir: str = ".", encoding: str = "utf-8-sig"
+):
     # 中身は CSV と同じ形式想定なので、既存の loader を流用する
     return load_setting_csv(filename=filename, data_dir=data_dir, encoding=encoding)

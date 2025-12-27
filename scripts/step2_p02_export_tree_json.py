@@ -109,7 +109,7 @@ def pick_label(*candidates: Any) -> str:
 def pick_segment(*candidates: Any) -> str:
     # folder-safe (最低限)
     s = pick_label(*candidates)
-    for ch in ['\\', '/', ':', '*', '?', '"', '<', '>', '|', '\t', '\n', '\r']:
+    for ch in ["\\", "/", ":", "*", "?", '"', "<", ">", "|", "\t", "\n", "\r"]:
         s = s.replace(ch, "_")
     s = s.rstrip(" .")
     return s if s else "_"
@@ -138,39 +138,39 @@ def export_tree_json(*, out_path: Path) -> None:
         raise FileNotFoundError(f"DB not found: {db_path}")
 
     # table names
-    tbl_cat_type  = rs.get_setting_value(setting_csv, sk.KEY_TBL_CAT_TYPE)
+    tbl_cat_type = rs.get_setting_value(setting_csv, sk.KEY_TBL_CAT_TYPE)
     tbl_cat_major = rs.get_setting_value(setting_csv, sk.KEY_TBL_CAT_MAJOR)
-    tbl_cat_sub   = rs.get_setting_value(setting_csv, sk.KEY_TBL_CAT_SUB)
-    tbl_rules     = rs.get_setting_value(setting_csv, sk.KEY_TBL_RULES)
-    tbl_request   = rs.get_setting_value(setting_csv, sk.KEY_TBL_REQUEST)
+    tbl_cat_sub = rs.get_setting_value(setting_csv, sk.KEY_TBL_CAT_SUB)
+    tbl_rules = rs.get_setting_value(setting_csv, sk.KEY_TBL_RULES)
+    tbl_request = rs.get_setting_value(setting_csv, sk.KEY_TBL_REQUEST)
 
     # column names (category)
-    col_type_pkey  = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_TYPE_PKEY)
-    col_type_tjp   = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_TYPE_TITLE_JP)
-    col_type_ten   = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_TYPE_TITLE_EN)
-    col_type_path  = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_TYPE_PATH)
+    col_type_pkey = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_TYPE_PKEY)
+    col_type_tjp = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_TYPE_TITLE_JP)
+    col_type_ten = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_TYPE_TITLE_EN)
+    col_type_path = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_TYPE_PATH)
 
     col_major_pkey = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_MAJOR_PKEY)
-    col_major_tjp  = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_MAJOR_TITLE_JP)
-    col_major_ten  = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_MAJOR_TITLE_EN)
+    col_major_tjp = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_MAJOR_TITLE_JP)
+    col_major_ten = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_MAJOR_TITLE_EN)
     col_major_fkey = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_MAJOR_FKEY_CAT_TYPE)
     col_major_path = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_MAJOR_PATH)
 
-    col_sub_pkey   = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_SUB_PKEY)
-    col_sub_tjp    = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_SUB_TITLE_JP)
-    col_sub_ten    = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_SUB_TITLE_EN)
-    col_sub_fkey   = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_SUB_FKEY_CAT_MAJOR)
-    col_sub_path   = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_SUB_PATH)
+    col_sub_pkey = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_SUB_PKEY)
+    col_sub_tjp = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_SUB_TITLE_JP)
+    col_sub_ten = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_SUB_TITLE_EN)
+    col_sub_fkey = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_SUB_FKEY_CAT_MAJOR)
+    col_sub_path = rs.get_setting_value(setting_csv, sk.KEY_ITM_CAT_SUB_PATH)
 
     # column names (rules)
-    col_rule_pkey  = rs.get_setting_value(setting_csv, sk.KEY_ITM_RULES_PKEY)
-    col_rule_id    = rs.get_setting_value(setting_csv, sk.KEY_ITM_RULES_ID_RULE)
-    col_rule_name  = rs.get_setting_value(setting_csv, sk.KEY_ITM_RULES_NAME_RULE)
-    col_rule_fsub  = rs.get_setting_value(setting_csv, sk.KEY_ITM_RULES_FKEY_CAT_SUB)
+    col_rule_pkey = rs.get_setting_value(setting_csv, sk.KEY_ITM_RULES_PKEY)
+    col_rule_id = rs.get_setting_value(setting_csv, sk.KEY_ITM_RULES_ID_RULE)
+    col_rule_name = rs.get_setting_value(setting_csv, sk.KEY_ITM_RULES_NAME_RULE)
+    col_rule_fsub = rs.get_setting_value(setting_csv, sk.KEY_ITM_RULES_FKEY_CAT_SUB)
 
     # column names (request)
     col_req_key_rule = rs.get_setting_value(setting_csv, sk.KEY_ITM_REQUEST_KEY_RULE)
-    col_req_id_cap   = rs.get_setting_value(setting_csv, sk.KEY_ITM_REQUEST_ID_CAP)
+    col_req_id_cap = rs.get_setting_value(setting_csv, sk.KEY_ITM_REQUEST_ID_CAP)
     col_req_title_cap = rs.get_setting_value(setting_csv, sk.KEY_ITM_REQUEST_FTITLE_CAPTER)
 
     # SQL: Type->Major->Sub->Rule (+Chapter)
@@ -225,33 +225,36 @@ ORDER BY
     # output base (rules dir under BUILD_DIR)
     rules_dir = rs.get_setting_value(setting_csv, sk.KEY_RULES_DIR)
     rules_file_dir = rs.get_setting_value(setting_csv, sk.KEY_RULES_FILE_DIR)
-    prefix = rules_dir if (rules_file_dir or "").strip() in ("", ".") else f"{rules_dir}/{rules_file_dir}"
-
+    prefix = (
+        rules_dir
+        if (rules_file_dir or "").strip() in ("", ".")
+        else f"{rules_dir}/{rules_file_dir}"
+    )
 
     for _, row in df.iterrows():
-        type_seg  = pick_segment(row["type_path"], row["type_en"])
+        type_seg = pick_segment(row["type_path"], row["type_en"])
         major_seg = pick_segment(row["major_path"], row["major_en"])
-        sub_seg   = pick_segment(row["sub_path"], row["sub_en"])
-        rule_seg  = pick_segment(row["id_rule"])
-        cap_seg   = pick_segment(row["id_cap"]) if pd.notna(row["id_cap"]) else ""
+        sub_seg = pick_segment(row["sub_path"], row["sub_en"])
+        rule_seg = pick_segment(row["id_rule"])
+        cap_seg = pick_segment(row["id_cap"]) if pd.notna(row["id_cap"]) else ""
 
-        type_label  = pick_label(row["type_jp"], row["type_en"], type_seg)
+        type_label = pick_label(row["type_jp"], row["type_en"], type_seg)
         major_label = pick_label(row["major_jp"], row["major_en"], major_seg)
-        sub_label   = pick_label(row["sub_jp"], row["sub_en"], sub_seg)
-        rule_label  = pick_label(row["name_rule"], row["id_rule"])
-        cap_label   = pick_label(row["title_capter"], row["id_cap"]) if cap_seg else ""
+        sub_label = pick_label(row["sub_jp"], row["sub_en"], sub_seg)
+        rule_label = pick_label(row["name_rule"], row["id_rule"])
+        cap_label = pick_label(row["title_capter"], row["id_cap"]) if cap_seg else ""
 
         # path: rules/<type>/<major>/<sub>/<id_rule>/<id_cap?>
-        type_path  = f"{prefix}/{type_seg}"
+        type_path = f"{prefix}/{type_seg}"
         major_path = f"{prefix}/{type_seg}/{major_seg}"
-        sub_path   = f"{prefix}/{type_seg}/{major_seg}/{sub_seg}"
-        rule_path  = f"{prefix}/{type_seg}/{major_seg}/{sub_seg}/{rule_seg}"
-        cap_path   = f"{rule_path}/{cap_seg}" if cap_seg else rule_path
+        sub_path = f"{prefix}/{type_seg}/{major_seg}/{sub_seg}"
+        rule_path = f"{prefix}/{type_seg}/{major_seg}/{sub_seg}/{rule_seg}"
+        cap_path = f"{rule_path}/{cap_seg}" if cap_seg else rule_path
 
-        n_type  = ensure_child(root, f"type:{type_seg}", type_label, type_path)
+        n_type = ensure_child(root, f"type:{type_seg}", type_label, type_path)
         n_major = ensure_child(n_type, f"major:{major_seg}", major_label, major_path)
-        n_sub   = ensure_child(n_major, f"sub:{sub_seg}", sub_label, sub_path)
-        n_rule  = ensure_child(n_sub, f"rule:{rule_seg}", rule_label, rule_path)
+        n_sub = ensure_child(n_major, f"sub:{sub_seg}", sub_label, sub_path)
+        n_rule = ensure_child(n_sub, f"rule:{rule_seg}", rule_label, rule_path)
 
         if cap_seg:
             ensure_child(n_rule, f"cap:{cap_seg}", cap_label, cap_path)
@@ -259,7 +262,9 @@ ORDER BY
     finalize_tree(root)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(root["children"], ensure_ascii=False, indent=2), encoding="utf-8")
+    out_path.write_text(
+        json.dumps(root["children"], ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     logger.info("Wrote: %s", out_path)
 
 
@@ -273,15 +278,22 @@ def main() -> int:
     @endif
     """
     parser = argparse.ArgumentParser(description="Step2-3: Export tree.json from SQLite.")
-    parser.add_argument("--out", type=str, default="", help="Output json path (default: out/rules_tree/tree.json).")
-    parser.add_argument("--log-level", type=str, default="INFO", help="Logging level (DEBUG/INFO/WARNING/ERROR).")
+    parser.add_argument(
+        "--out", type=str, default="", help="Output json path (default: out/rules_tree/tree.json)."
+    )
+    parser.add_argument(
+        "--log-level", type=str, default="INFO", help="Logging level (DEBUG/INFO/WARNING/ERROR)."
+    )
     args = parser.parse_args()
 
-    logging.basicConfig(level=getattr(logging, args.log_level.upper(), logging.INFO), format="%(levelname)s: %(message)s")
+    logging.basicConfig(
+        level=getattr(logging, args.log_level.upper(), logging.INFO),
+        format="%(levelname)s: %(message)s",
+    )
 
-    setting_csv       = rs.load_setting_csv()
-    json_tree_name    =  rs.get_setting_value(setting_csv, sk.KEY_JSON_MAIN_TREE)
-    json_tree_fullpth = sh.json_file_fullpath( setting_csv, json_tree_name )
+    setting_csv = rs.load_setting_csv()
+    json_tree_name = rs.get_setting_value(setting_csv, sk.KEY_JSON_MAIN_TREE)
+    json_tree_fullpth = sh.json_file_fullpath(setting_csv, json_tree_name)
 
     default_out = Path(str(json_tree_fullpth))
     out_path = Path(args.out) if args.out else default_out

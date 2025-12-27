@@ -1,78 +1,17 @@
 @echo off
-setlocal EnableExtensions EnableDelayedExpansion
-
+setlocal
 cd /d "%~dp0\.."
 set "ROOT=%cd%"
-set "SCRIPTS=%ROOT%\scripts"
-set "SRC=%ROOT%\src"
-set "PYTHONPATH=%SRC%"
 
-call :banner "step1_ALL (STEP1 only)"
-call :envinfo
-
-call :section "STEP1"
-call :run "step1_p00_check_excel.py"
-call :run "step1_p01_import_excel_to_sqlite.py"
-call :run "step1_p02_check_db.py"
-
-call :footer "DONE"
-pause
-exit /b 0
-
-
-:banner
-set "TITLE=%~1"
-echo ============================================================
-echo [%date% %time%] %TITLE%
-echo ============================================================
-exit /b 0
-
-
-:envinfo
-echo [ENV] ROOT      = "%ROOT%"
-echo [ENV] SCRIPTS   = "%SCRIPTS%"
-echo [ENV] SRC       = "%SRC%"
-echo [ENV] PYTHONPATH= "%PYTHONPATH%"
-echo.
-exit /b 0
-
-
-:section
-set "NAME=%~1"
-echo ------------------------------------------------------------
-echo [%date% %time%] %NAME%
-echo ------------------------------------------------------------
-exit /b 0
-
-
-:run
-set "FILE=%~1"
-set "FULL=%SCRIPTS%\%FILE%"
-
-if not exist "%FULL%" (
-  echo [ERR] NOT FOUND : "%FULL%"
+py -m pip install -e "%ROOT%"
+if errorlevel 1 (
+  echo [ERR] pip install -e failed
+  pause
   exit /b 1
 )
 
-echo [RUN]  %FILE%
-echo [TIME] start = %date% %time%
-py "%FULL%"
+py -m rulenavi step1
 set "EC=%errorlevel%"
-echo [TIME] end   = %date% %time%
-
-if not "!EC!"=="0" (
-  echo [ERR] FAILED : %FILE%  (exitcode=!EC!)
-  exit /b !EC!
-)
-
-echo [OK ]  %FILE%
-echo.
-exit /b 0
-
-
-:footer
-set "MSG=%~1"
-echo ============================================================
-echo [%date% %time%] %MSG%
-echo ============================================================
-exit /b 0
+echo [EXIT] %EC%
+pause
+exit /b %EC%

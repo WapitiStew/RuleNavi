@@ -1,3 +1,13 @@
+Metadata-Version: 2.4
+Name: rulenavi
+Version: 0.1.0
+Summary: RuleNavi build tools
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: pandas
+Requires-Dist: openpyxl
+Requires-Dist: markdown
+
 # RuleNavi
 
 ## 1. 概要
